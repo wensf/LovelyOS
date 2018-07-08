@@ -11,6 +11,7 @@
 #include <8259A.h>
 #include <sched.h>
 #include <memory.h>
+#include <system.h>
 #include <version.h>
 #include <printf.h>
 
@@ -148,6 +149,8 @@ void global_variable_init(void)
 	last_pid = 0;
 }
 
+extern int timer_c;
+
 int main( int argc, char *argv[] )
 {
 	int ret = 0;
@@ -182,19 +185,24 @@ int main( int argc, char *argv[] )
         printf("get_free_page failed\n");
 	}
 
-	//Enum_pci_device();
-
 	sched_init();
 
+	sti();
 	move_to_user_mode();
-	tty_set_location(48, 12);
+	tty_set_location(10, 9);
 
-	// ret = fork();
+	#if 0
+	ret = fork();
+	#else
 	__asm __volatile__ ("mov %eax, 0");
 	__asm __volatile__ ("int $0x80"
                      :"=a"(ret)
                      :);
-	if( ret == 0)
+    #endif
+
+    // __asm __volatile__("int $0x20");
+
+	if( ret == 0 )
 	{
 		init();
 	}
@@ -202,10 +210,11 @@ int main( int argc, char *argv[] )
 	int i = 10;
 	for(;;)
 	{
-		tty_set_location(48,12);
-		printf("In the parent i = %d \n", i++);
-		i++;i++;i++;
+		tty_set_location(10,15);
+		printf("In the parent i = %d \n", i);
+		i++;
  		pause();
+ 		delay();
 	}
 }
 
@@ -216,8 +225,8 @@ void init(void)
 
 	for(;;)
 	{
-		tty_set_location(48,14);
-		printf("In the child i = %d \n", i);
+		tty_set_location(10,16);
+		printf("In the child timer_c = %d i = %d \n",timer_c, i);
 		i++;
 		i++;
 		i++;

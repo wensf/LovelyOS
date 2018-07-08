@@ -38,6 +38,7 @@
 		<Unit filename="include/kernel/io.h" />
 		<Unit filename="include/kernel/irq.h" />
 		<Unit filename="include/kernel/sched.h" />
+		<Unit filename="include/kernel/sys_call.h" />
 		<Unit filename="include/kernel/system.h" />
 		<Unit filename="include/kernel/traps.h" />
 		<Unit filename="include/kernel/version.h" />

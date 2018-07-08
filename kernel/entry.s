@@ -5,7 +5,7 @@
 .global int3_trap
 
 
-
+.align 4
 int3_trap:
 	push %eax
 	push %ecx

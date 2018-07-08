@@ -1,6 +1,3 @@
-
-
-
 #include <system.h>
 #include <libc.h>
 
@@ -25,3 +22,5 @@ const fn_ptr sys_call_table[]=
 	(fn_ptr)sys_call1_pause,
 	(fn_ptr)sys_call2_read,
 };
+
+const int nr_sys_calls = sizeof(sys_call_table)/sizeof(sys_call_table[0]);

@@ -10,9 +10,13 @@ struct task_struct *current;
 
 void printf(const char *fmt,...);
 
-void timer_interrupt(void)
-{
+extern int timer_int(void);
 
+int timer_c = 0;
+int timer_interrupt(void)
+{
+    timer_c++;
+    return 0;
 }
 
 void sched_init(void)
@@ -53,12 +57,13 @@ void sched_init(void)
 	/**
 	 * Init the 8253 Timer.
      */
-    //set_igate_descriptor(0x20, 0, timer_interrupt);
+    set_igate_descriptor(0x20, 3, timer_int);
 
     /**
      * binary, mode 3, LSB/MSB, ch 0
      */
-    #define val 0
+    #define HZ 100
+    #define val (1193180/HZ)
     outb(0x36, 0x43);
     outb( val & 0xFF, 0x40);
     outb( val>>8, 0x40);

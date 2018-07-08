@@ -18,6 +18,7 @@
 .global do_fork
 .global find_empty_process
 .global schedule
+.global nr_sys_calls
 
 .align 4
 bad_sys_call:
@@ -26,7 +27,7 @@ bad_sys_call:
 
 .align 4
 system_call:
-    cmpl $0x1,%eax
+    cmpl $nr_sys_calls,%eax
 	ja   bad_sys_call
 	pushl %es
 	pushl %ds
@@ -76,3 +77,23 @@ sys_call0_fork:
 sys_call1_pause:
 	call schedule
 	jmp _ret_from_sys_call
+
+
+.global timer_int
+.global timer_interrupt
+
+.align 4
+timer_int:
+	push %eax
+	push %ecx
+	push %edx
+
+	movb $0x20, %al
+	outb %al, $0x20
+
+	call timer_interrupt
+
+	pop  %edx
+	pop  %ecx
+	pop  %eax
+	iret
