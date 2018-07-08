@@ -1,0 +1,36 @@
+###############################################################
+#onfiguration file for Bochs
+###############################################################
+
+# how much memory the emulated machine will have
+gdbstub:enabled=1,port=1234
+
+megs: 32
+
+# filename of ROM images
+# romimage: file=C:\MinGW\msys\1.0\local\share\bochs\BIOS-bochs-latest
+# vgaromimage: file=C:\MinGW\msys\1.0\local\share\bochs\VGABIOS-lgpl-latest
+
+# what disk images will be used
+# floppya: 1_44=/root/bootimage-0.11-20040305, status=inserted
+# floppyb: 1_44=/root/rootimage-0.11-20040305, status=inserted
+# floppya: 1_44=./a.img, status=inserted
+# floppya: image="./arch/c.img", status=inserted
+ata0-master: type=disk,path="arch/c.img", mode=flat
+# choose the boot disk.
+boot: disk
+
+# where do we send log messages?
+#log: .bochsout.txt
+
+# disable the mouse
+mouse: enabled=0
+
+# enable key mapping, using US layout as default.
+# keyboard_mapping: enabled=1, map=/usr/local/share/bochs/keymaps/x11-pc-us.map
+
+#enabled debug using xchg bx, bx
+
+#magic_break:enabled=1
+
+###########################################################

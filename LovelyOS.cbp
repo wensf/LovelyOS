@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="os" />
+		<Option makefile_is_custom="1" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="Debug/os" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+		</Compiler>
+		<Unit filename=".lds" />
+		<Unit filename="Makefile" />
+		<Unit filename="arch/Makefile" />
+		<Unit filename="arch/boot.s" />
+		<Unit filename="arch/loader/Makefile" />
+		<Unit filename="arch/loader/libc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="arch/loader/loader.s" />
+		<Unit filename="arch/loader/readfat.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="bochsrc.bxrc" />
+		<Unit filename="include/buffer.h" />
+		<Unit filename="include/kernel/8259A.h" />
+		<Unit filename="include/kernel/io.h" />
+		<Unit filename="include/kernel/irq.h" />
+		<Unit filename="include/kernel/sched.h" />
+		<Unit filename="include/kernel/system.h" />
+		<Unit filename="include/kernel/traps.h" />
+		<Unit filename="include/kernel/version.h" />
+		<Unit filename="include/lib/printf.h" />
+		<Unit filename="include/libc.h" />
+		<Unit filename="include/mm/memory.h" />
+		<Unit filename="include/stdarg.h" />
+		<Unit filename="init/main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="init/pci.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="init/version.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="kernel/8259A.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="kernel/entry.s" />
+		<Unit filename="kernel/fork.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="kernel/io.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="kernel/irq.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="kernel/kernel.s" />
+		<Unit filename="kernel/pages.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="kernel/sched.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="kernel/sys_call.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="kernel/system_call.s" />
+		<Unit filename="kernel/traps.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="lib/buffer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="lib/libc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="lib/libs.s" />
+		<Unit filename="lib/printf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="mm/memory.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="tools/build.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Extensions>
+			<code_completion />
+			<debugger>
+				<remote_debugging target="Debug">
+					<options conn_type="0" serial_baud="115200" ip_address="127.0.0.1" ip_port="1234" />
+				</remote_debugging>
+			</debugger>
+			<envvars />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
