@@ -5,6 +5,7 @@
 # how much memory the emulated machine will have
 gdbstub:enabled=1,port=1234
 
+
 megs: 32
 
 # filename of ROM images

@@ -16,18 +16,18 @@ KERNEL_BIN 		= kernel.bin
 IMAGE			= arch/a.img
 IMAGE_MOUNT_AT	= /mnt/floppy
 
-SRCS_KERNEL = $(wildcard kernel/*.s)
+SRCS_KERNEL = $(wildcard kernel/*.S)
 SRCC_KERNEL = $(wildcard kernel/*.c)
 SRCC_INIT   = $(wildcard init/*.c)
 SRCC_LIB    = $(wildcard lib/*.c)
-SRCS_LIB    = $(wildcard lib/*.s)
+SRCS_LIB    = $(wildcard lib/*.S)
 SRCC_MM     = $(wildcard mm/*.c)
 
-OBJS_KERNEL = $(patsubst %.s,%.o, $(SRCS_KERNEL))
+OBJS_KERNEL = $(patsubst %.S,%.o, $(SRCS_KERNEL))
 OBJC_KERNEL = $(patsubst %.c,%.o, $(SRCC_KERNEL))
 OBJC_INIT   = $(patsubst %.c,%.o, $(SRCC_INIT))
 OBJC_LIB    = $(patsubst %.c,%.o, $(SRCC_LIB))
-OBJS_LIB    = $(patsubst %.s,%.o, $(SRCS_LIB))
+OBJS_LIB    = $(patsubst %.S,%.o, $(SRCS_LIB))
 OBJC_MM     = $(patsubst %.c,%.o, $(SRCC_MM))
 
 Debug : $(BOOT_BIN) $(LOADER_BIN) $(OBJS_KERNEL) $(OBJC_KERNEL) $(OBJS_LIB)  $(OBJC_LIB) $(OBJC_MM) $(OBJC_INIT)

@@ -46,6 +46,8 @@ struct regs
 	unsigned long esi;
 	unsigned long edi;
 	unsigned long ebp;
+	unsigned long fs;
+	unsigned long gs;
 	unsigned long ds;
 	unsigned long es;
 	unsigned long eip;
@@ -69,8 +71,10 @@ void kernel_stack_dump(struct regs *reg)
 	printf("esi = %08x\n", reg->esi);
 	printf("edi = %08x\n", reg->edi);
 	printf("ebp = %08x\n", reg->ebp);
-	printf("ds  = %04x\n", reg->ds);
+	printf("fs  = %04x\n", reg->fs);
+	printf("gs  = %04x\n", reg->gs);
 	printf("es  = %04x\n", reg->es);
+	printf("ds  = %04x\n", reg->ds);
 	printf("eip = %08x\n", reg->eip);
 	printf("cs  = %04x\n", reg->cs);
 	printf("eflags = %08x\n", reg->eflags);
@@ -94,7 +98,7 @@ int do_fork(int nr,unsigned long stack_start)
 
 	p = (struct task_struct *)&buff[nr];
 	p->pid = last_pid;
-	p->thread.esp0 = (unsigned long)kernel_stack[nr] + (64*4);
+	p->thread.esp0 = (unsigned long)kernel_stack[nr] + (1024*4);
 	//p->tss.ss0 = SELECTOR_KERNEL_DATA;
 	p->thread.eip = (unsigned long)ret_from_fork;
 	//p->thread.esp = p->tss.esp0;
@@ -106,12 +110,12 @@ int do_fork(int nr,unsigned long stack_start)
 
 	p->thread.esp = (unsigned long)childreg;
 	childreg->eax = 0;
-	childreg->esp = (unsigned long)(user_stack[nr] + 64 * 4);
+	childreg->esp = (unsigned long)(user_stack[nr] + 1024 * 4);
 
 	task[nr] = p;
 
-	//task_struct_dump(p);
-	//kernel_stack_dump(childreg);
+	// task_struct_dump(p);
+	kernel_stack_dump(childreg);
 	printf("child_reg address : %08x\n", childreg);
 	printf("thread.esp %08x\n", p->thread.esp);
 

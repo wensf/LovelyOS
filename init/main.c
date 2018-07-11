@@ -187,20 +187,19 @@ int main( int argc, char *argv[] )
 
 	sched_init();
 
-	sti();
+	tty_set_location(10, 8);
+
+    sti();
 	move_to_user_mode();
-	tty_set_location(10, 9);
 
 	#if 0
 	ret = fork();
 	#else
-	__asm __volatile__ ("mov %eax, 0");
+	__asm __volatile__ ("mov $0, %eax");
 	__asm __volatile__ ("int $0x80"
                      :"=a"(ret)
                      :);
     #endif
-
-    // __asm __volatile__("int $0x20");
 
 	if( ret == 0 )
 	{
@@ -211,10 +210,10 @@ int main( int argc, char *argv[] )
 	for(;;)
 	{
 		tty_set_location(10,15);
-		printf("In the parent i = %d \n", i);
+		printf("In the parent timer_c = %d i = %d \n",timer_c, i);
 		i++;
- 		pause();
- 		delay();
+// 		pause();
+// 		delay();
 	}
 }
 
@@ -230,6 +229,6 @@ void init(void)
 		i++;
 		i++;
 		i++;
-		pause();
+//		pause();
 	}
 }

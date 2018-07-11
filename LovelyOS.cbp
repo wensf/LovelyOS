@@ -58,7 +58,7 @@
 		<Unit filename="kernel/8259A.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="kernel/entry.s" />
+		<Unit filename="kernel/entry.S" />
 		<Unit filename="kernel/fork.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -68,7 +68,7 @@
 		<Unit filename="kernel/irq.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="kernel/kernel.s" />
+		<Unit filename="kernel/kernel.S" />
 		<Unit filename="kernel/pages.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -78,7 +78,7 @@
 		<Unit filename="kernel/sys_call.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="kernel/system_call.s" />
+		<Unit filename="kernel/system_call.S" />
 		<Unit filename="kernel/traps.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -88,7 +88,7 @@
 		<Unit filename="lib/libc.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="lib/libs.s" />
+		<Unit filename="lib/libs.S" />
 		<Unit filename="lib/printf.c">
 			<Option compilerVar="CC" />
 		</Unit>

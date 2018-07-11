@@ -1,2 +1,7 @@
 *.o
 
+Debug
+*.bin
+*.dis
+*.map
+*.elf
