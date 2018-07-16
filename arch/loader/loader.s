@@ -144,6 +144,7 @@ _start:
 	mov     %ax, %ds
 	mov     %ax, %es
 	mov     %ax, %gs
+	mov     %ax, %ss
 
 	call    my_cfun
 

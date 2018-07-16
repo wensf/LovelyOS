@@ -42,7 +42,7 @@ void my_putchar( int x, int y, char c)
  */
 int my_putstr(int x, int y, const char *str)
 {
-    while( str && (*str != 0) )
+    while( str && (*str != '\0') )
     {
         my_putchar( x, y, *str++);
         if ( ++x > 79 )
@@ -60,16 +60,12 @@ void my_cfun(void)
 {
     char buffer[32];
 
+    my_putchar(0, 0,'T');
+
     my_putstr( 0, 0, "we just show a demo string!" );
 
-    //sprintf(buffer, "C function entry at %08x", (unsigned long)my_cfun);
-    //sprintf(buffer, "%08x", (unsigned long)my_cfun);
-    //int len = 0;
-
     strcpy(buffer, "test string");
-    //len =
-    strlen(buffer);
-
+    int len = strlen(buffer);
 
     my_putstr( 0, 1, buffer);
 }

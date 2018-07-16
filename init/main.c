@@ -165,7 +165,7 @@ int main( int argc, char *argv[] )
 	trap_init();
 	IRQ_init();
 	init_8259A();
-	mem_init(0x100000, 0x800000);
+    mem_init(0x100000, 0x800000);
 
 	ptr = get_free_page();
 	if ( ptr != 0 )
@@ -192,14 +192,16 @@ int main( int argc, char *argv[] )
     sti();
 	move_to_user_mode();
 
-	#if 0
-	ret = fork();
-	#else
+
+	/**
+	 * Execute a system int 0x80 to call 'fork'
+	 * Inline Assembler syntax to avoid using
+	 * stack in user mode.
+	 */
 	__asm __volatile__ ("mov $0, %eax");
 	__asm __volatile__ ("int $0x80"
                      :"=a"(ret)
                      :);
-    #endif
 
 	if( ret == 0 )
 	{
