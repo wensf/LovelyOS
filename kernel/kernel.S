@@ -21,7 +21,7 @@ _start:				/* we just print a chacter  */
 	mov		$(80*12+0x0)*2, %eax
 	mov		$0xB8000, %ebx
 	addl 	%eax, %ebx
-	mov		$0x0C, %ah				/* 0000: black 1111: white */
+	mov		$0x0C, %ah						/* 0000: black 1111: white */
 	mov		$'K', %al
 	mov		%ax, (%ebx)
 
@@ -43,7 +43,7 @@ _flush:
 
 clear_bss:
 
-    call    setup_paging
+#    call    setup_paging
 
 	jmpl	$0x08, $main
 

@@ -3,14 +3,15 @@
 ###############################################################
 
 # how much memory the emulated machine will have
-gdbstub:enabled=1,port=1234
+# gdbstub:enabled=1,port=1234
+
 
 
 megs: 32
 
 # filename of ROM images
-# romimage: file=C:\MinGW\msys\1.0\local\share\bochs\BIOS-bochs-latest
-# vgaromimage: file=C:\MinGW\msys\1.0\local\share\bochs\VGABIOS-lgpl-latest
+romimage: file=/usr/local/share/bochs/BIOS-bochs-latest
+vgaromimage: file=/usr/local/share/bochs/VGABIOS-lgpl-latest
 
 # what disk images will be used
 # floppya: 1_44=/root/bootimage-0.11-20040305, status=inserted
@@ -28,7 +29,7 @@ boot: disk
 mouse: enabled=0
 
 # enable key mapping, using US layout as default.
-# keyboard_mapping: enabled=1, map=/usr/local/share/bochs/keymaps/x11-pc-us.map
+keyboard: keymap=/usr/local/share/bochs/keymaps/x11-pc-us.map
 
 #enabled debug using xchg bx, bx
 

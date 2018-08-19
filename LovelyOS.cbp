@@ -30,10 +30,31 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="arch/loader/loader.S" />
+		<Unit filename="arch/loader/main.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="arch/loader/readfat.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="bochsrc.bxrc" />
+		<Unit filename="driver/tty.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="fs/close.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="fs/open.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="fs/read.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="fs/vfs.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="fs/write.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="include/buffer.h" />
 		<Unit filename="include/kernel/8259A.h" />
 		<Unit filename="include/kernel/io.h" />
@@ -59,7 +80,6 @@
 		<Unit filename="kernel/8259A.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="kernel/entry.S" />
 		<Unit filename="kernel/fork.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -70,7 +90,13 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="kernel/kernel.S" />
+		<Unit filename="kernel/keyboard.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="kernel/pages.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="kernel/printk.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="kernel/sched.c">

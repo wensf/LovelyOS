@@ -19,7 +19,7 @@ OBJS_BOOT = $(patsubst %.s,%.o, $(SRCS_BOOT))
 
 Debug : $(OBJS_BOOT)
 	$(LD) $(LDFLAGS) boot.o -s -S -o boot.elf
-	$(OBJCOPY) -S --only-section .text -O binary boot.elf $(BOOT_BIN)
+	$(OBJCOPY) -S --only-section .text --only-section .rodata --only-section .data -O binary boot.elf $(BOOT_BIN)
 	$(OBJDUMP) -D boot.elf > boot.dis
 boot.o:boot.s
 	as -g -o boot.o boot.s

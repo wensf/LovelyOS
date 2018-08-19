@@ -69,7 +69,7 @@ Disptr:
 	mov     $0x1301, %ax
 	mov     $0x000C, %bx
 	mov     $0x0, %dl
-	add	    $1, %dh
+	/* mov  $0x3, %dh  */
 	int     $0x10
 	ret
 
@@ -86,7 +86,7 @@ read_loader:
 	mov		%sp, %bp
 
 	mov     $0x02, %ah	/* BIOS function number */
-	mov     $0x10, %al	/* number of sector to read (16 secotors)*/
+	mov     $0x20, %al	/* number of sector to read (32 secotors)*/
 	mov     $0x00, %ch	/* number of trunk */
 	mov     $0x02, %cl	/* number of start secotr (from 1)*/
 	mov     $0x00, %dh	/* number of header */
@@ -117,6 +117,30 @@ Message:
 	.ascii "Ready.    "
 MessageErr:
     .ascii "Read Error"
+    
+/**
+ * Hard disk partition table
+ */    
+	.org  446
+	.byte 0x80
+	.byte 0x20
+	.byte 0x21
+	.byte 0x00
+	.byte 0x04
+	.byte 0x25
+	.byte 0x24
+	.byte 0x01
+	.byte 0x00
+	.byte 0x08
+	.byte 0x00
+	.byte 0x00
+	.byte 0x00
+	.byte 0x40
+	.byte 0x00
+	.byte 0x00
+	.byte 0x00
+	.byte 0x00
+	
 /**
  * Bootable device flage 0xAA55
  */

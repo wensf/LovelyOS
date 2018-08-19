@@ -16,5 +16,6 @@ extern int strlen(const char *s);
 extern int strncpy(char *dst,const char*src, int size);
 extern void memcpy(void *dst,const void *src, int size);
 extern void strcpy(char *dst,const char *src);
+extern void trim( char *strIn, char *strOut );
 
 #endif

@@ -6,7 +6,7 @@
  */
 #include <stdarg.h>
 
-#define MAX_BUF_LEN   64
+#define MAX_BUF_LEN   128
 #define ZEROPAD       0
 #define SPACEPAD      1
 
@@ -267,9 +267,10 @@ int itoa(int num,char *str)
  * num : destination number to changed.
  * str : buffer.
  */
+static const char *table = "0123456789abcdef";
+
 int itoh(int num,char *str)
 {
-	char *table = "0123456789abcdef";
 	char buffer[32];
 	int n = 8;
 

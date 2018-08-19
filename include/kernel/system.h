@@ -27,9 +27,6 @@ struct gate_desc
 	unsigned short offset2;
 }__attribute__((packed));
 
-// extern struct gate_desc _idt[];
-// extern struct gate_desc _gdt[];
-
 extern struct tss_desc _gdt[];
 extern struct gate_desc _idt[];
 

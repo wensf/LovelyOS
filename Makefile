@@ -7,7 +7,7 @@ CC 				= gcc
 LD 				= ld
 OBJCOPY 		= objcopy
 OBJDUMP			= objdump
-CFLAGS 			= -Wall -g -I include -I include/lib -I include/kernel -I include/mm -fno-stack-protector -fno-builtin -nostdinc
+CFLAGS 			= -Wall -g -O1 -Iinclude -I include/lib -I include/kernel -I include/mm -I include/init -I include/fs -I include/driver -fno-stack-protector -fno-builtin -nostdinc
 LDFLAGS 		= -T.lds
 #LDFLAGS         = -Ttext=0x00108000
 BOOT_BIN        = boot.bin
@@ -22,6 +22,8 @@ SRCC_INIT   = $(wildcard init/*.c)
 SRCC_LIB    = $(wildcard lib/*.c)
 SRCS_LIB    = $(wildcard lib/*.S)
 SRCC_MM     = $(wildcard mm/*.c)
+SRCC_FS     = $(wildcard fs/*.c)
+SRCC_DRIVER = $(wildcard driver/*.c)
 
 OBJS_KERNEL = $(patsubst %.S,%.o, $(SRCS_KERNEL))
 OBJC_KERNEL = $(patsubst %.c,%.o, $(SRCC_KERNEL))
@@ -29,9 +31,11 @@ OBJC_INIT   = $(patsubst %.c,%.o, $(SRCC_INIT))
 OBJC_LIB    = $(patsubst %.c,%.o, $(SRCC_LIB))
 OBJS_LIB    = $(patsubst %.S,%.o, $(SRCS_LIB))
 OBJC_MM     = $(patsubst %.c,%.o, $(SRCC_MM))
+OBJC_FS     = $(patsubst %.c,%.o, $(SRCC_FS))
+OBJC_DRIVER = $(patsubst %.c,%.o, $(SRCC_DRIVER))
 
-Debug : $(BOOT_BIN) $(LOADER_BIN) $(OBJS_KERNEL) $(OBJC_KERNEL) $(OBJS_LIB)  $(OBJC_LIB) $(OBJC_MM) $(OBJC_INIT)
-	$(LD) $(LDFLAGS) --oformat elf32-i386 -o kernel.elf $(OBJS_KERNEL) $(OBJC_KERNEL) $(OBJS_LIB) $(OBJC_LIB)  $(OBJC_MM) $(OBJC_INIT)
+Debug : $(BOOT_BIN) $(LOADER_BIN) $(OBJS_KERNEL) $(OBJC_KERNEL) $(OBJS_LIB)  $(OBJC_LIB) $(OBJC_MM) $(OBJC_INIT) $(OBJC_FS)  $(OBJC_DRIVER)
+	$(LD) $(LDFLAGS) --oformat elf32-i386 -o kernel.elf $(OBJS_KERNEL) $(OBJC_KERNEL) $(OBJS_LIB) $(OBJC_LIB)  $(OBJC_MM) $(OBJC_INIT) $(OBJC_FS) $(OBJC_DRIVER)
 	$(OBJCOPY) -S -O binary kernel.elf $(KERNEL_BIN)
 	$(OBJDUMP) -D kernel.elf > kernel.dis
 	mkdir -p Debug;

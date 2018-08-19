@@ -6,34 +6,14 @@
 
 extern void ret_from_fork(void);
 
-int printf(const char *fmt, ...);
+int printk(const char *fmt, ...);
 
 extern int last_pid;
 
 void task_struct_dump(struct task_struct *p)
 {
 #if 0
-	printf("pid %d\n", p->pid);
-	printf("tss.back_link = %d\n", p->tss.back_link);
-	printf("tss.esp0 = %08x\n", p->tss.esp0);
-	printf("tss.ss0 = %08x\n", p->tss.ss0);
-	printf("tss.eip = %08x\n", p->tss.eip);
-	printf("tss.eflags = %08x\n", p->tss.eflags);
-	printf("tss.eax = %08x\n", p->tss.eax);
-	printf("tss.ecx = %08x\n", p->tss.ecx);
-	printf("tss.edx = %08x\n", p->tss.edx);
-	printf("tss.ebx = %08x\n", p->tss.ebx);
-	printf("tss.esp = %08x\n", p->tss.esp);
-	printf("tss.ebp = %08x\n", p->tss.ebp);
-	printf("tss.esi = %08x\n", p->tss.esi);
-	printf("tss.edi = %08x\n", p->tss.edi);
-	printf("tss.es = %08x\n", p->tss.es);
-	printf("tss.cs = %08x\n", p->tss.cs);
-	printf("tss.ss = %08x\n", p->tss.ss);
-	printf("tss.ds = %08x\n", p->tss.ds);
-	printf("tss.fs = %08x\n", p->tss.fs);
-	printf("tss.gs = %08x\n", p->tss.gs);
-	printf("tss.trace_bitmap = %08x\n", p->tss.trace_bitmap);
+	printk("pid = %d,state = %d,eip = %08x\n", p->pid,p->state,p->thread.eip);
 #endif
 }
 
@@ -50,6 +30,7 @@ struct regs
 	unsigned long gs;
 	unsigned long ds;
 	unsigned long es;
+	unsigned long error; /* as a error */
 	unsigned long eip;
 	unsigned long cs;
 	unsigned long eflags;
@@ -64,22 +45,22 @@ void pt_copy(void *to, void *from, int cnt)
 
 void kernel_stack_dump(struct regs *reg)
 {
-	printf("eax = %08x\n", reg->eax);
-	printf("ebx = %08x\n", reg->ebx);
-	printf("ecx = %08x\n", reg->ecx);
-	printf("edx = %08x\n", reg->edx);
-	printf("esi = %08x\n", reg->esi);
-	printf("edi = %08x\n", reg->edi);
-	printf("ebp = %08x\n", reg->ebp);
-	printf("fs  = %04x\n", reg->fs);
-	printf("gs  = %04x\n", reg->gs);
-	printf("es  = %04x\n", reg->es);
-	printf("ds  = %04x\n", reg->ds);
-	printf("eip = %08x\n", reg->eip);
-	printf("cs  = %04x\n", reg->cs);
-	printf("eflags = %08x\n", reg->eflags);
-	printf("esp = %08x\n", reg->esp);
-	printf("ss  = %04x\n", reg->ss);
+	printk("eax = %08x\n", reg->eax);
+	printk("ebx = %08x\n", reg->ebx);
+	printk("ecx = %08x\n", reg->ecx);
+	printk("edx = %08x\n", reg->edx);
+	printk("esi = %08x\n", reg->esi);
+	printk("edi = %08x\n", reg->edi);
+	printk("ebp = %08x\n", reg->ebp);
+	printk("fs  = %04x\n", reg->fs);
+	printk("gs  = %04x\n", reg->gs);
+	printk("es  = %04x\n", reg->es);
+	printk("ds  = %04x\n", reg->ds);
+	printk("eip = %08x\n", reg->eip);
+	printk("cs  = %04x\n", reg->cs);
+	printk("eflags = %08x\n", reg->eflags);
+	printk("esp = %08x\n", reg->esp);
+	printk("ss  = %04x\n", reg->ss);
 }
 
 /**
@@ -94,11 +75,11 @@ int do_fork(int nr,unsigned long stack_start)
 	struct task_struct *p;
 	struct regs *childreg;
 
-	printf("do_fork nr = %d, stack_start = %08x\n", nr, stack_start);
-
 	p = (struct task_struct *)&buff[nr];
 	p->pid = last_pid;
-	p->thread.esp0 = (unsigned long)kernel_stack[nr] + (1024*4);
+	p->state = TASK_RUNNING;
+	p->delay = 0;
+	p->thread.esp0 = (unsigned long)kernel_stack[nr] + (1024*8);
 	//p->tss.ss0 = SELECTOR_KERNEL_DATA;
 	p->thread.eip = (unsigned long)ret_from_fork;
 	//p->thread.esp = p->tss.esp0;
@@ -106,21 +87,24 @@ int do_fork(int nr,unsigned long stack_start)
 
 	childreg = (struct regs *)((p->thread.esp0) - (sizeof(struct regs)));
 
-	pt_copy(childreg, (void*)(stack_start), sizeof(struct regs));
+	pt_copy(childreg, (void*)(stack_start+4), sizeof(struct regs));
 
 	p->thread.esp = (unsigned long)childreg;
 	childreg->eax = 0;
-	childreg->esp = (unsigned long)(user_stack[nr] + 1024 * 4);
+	childreg->esp = (unsigned long)user_stack[nr] + (1024*8);
 
 	task[nr] = p;
 
-	// task_struct_dump(p);
+	#if 0
+	task_struct_dump(p);
 	kernel_stack_dump(childreg);
-	printf("child_reg address : %08x\n", childreg);
-	printf("thread.esp %08x\n", p->thread.esp);
+	printk("child_reg address : %08x\n", childreg);
+	printk("thread.esp %08x\n", p->thread.esp);
 
-	printf("task[%d] kernel mode sta top %08x\n",nr, p->thread.esp0);
-	printf("task[%d] user mode stack top %08x\n",nr, childreg->esp);
+	printk("task[%d] kernel mode sta top %08x\n",nr, p->thread.esp0);
+	printk("task[%d] user mode stack top %08x\n",nr, childreg->esp);
+	printk("do_fork nr = %d, stack_start = %08x, tcp addr %08x\n", nr, stack_start, p);
+	#endif
 
 	return last_pid;
 }
@@ -129,7 +113,7 @@ int find_empty_process(void)
 {
 	/*int i = -1;
 
-	printf("find_empty_process\n");
+	printk("find_empty_process\n");
 
 	repeat:
 		if((++last_pid) < 0) last_pid = 1;
@@ -141,7 +125,7 @@ int find_empty_process(void)
 	{
 		if(!task[i]) break;//return i;
 	}
-	printf("i = %d last_pid = %d\n", i,last_pid);
+	printk("i = %d last_pid = %d\n", i,last_pid);
 
 	return i;*/
 

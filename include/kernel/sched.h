@@ -2,14 +2,23 @@
 #ifndef __SCHED_H__
 #define __SCHED_H__
 
+#include <vfs.h>
+
 #define SELECTOR_USER_CODE   (0x18 +3)
 #define SELECTOR_USER_DATA   (0x20 +3)
 #define SELECTOR_KERNEL_CODE 0x08
 #define SELECTOR_KERNEL_DATA 0x10
 #define TSS_SEGMENT          0x28
 
-#define TASK_RUNNING        0
-#define TASK_INTERRUPTABLE  1
+#define TASK_RUNNING        1
+#define TASK_INTERRUPTABLE  2
+#define TASK_SLEEP          3
+
+#define KERNEL_STACK_SIZE   4*1024
+#define USER_STACK_SIZE     8*1024
+
+#define HZ 100
+#define TIME_INTERVAL (1193180/HZ)
 
 struct tss_struct
 {
@@ -55,14 +64,23 @@ struct task_struct
 {
 	int pid;
 	int state;
+	int delay;
+	int u_time;
+	int k_time;
 	struct thread_struct thread;
+	struct file *file[FSAL_MAX_OPENED_FILE];
+	int file_counter[FSAL_MAX_OPENED_FILE];
 	struct task_struct *prev;
 	struct task_struct *next;
 };
 
-#define TASK_NR      8
+#define TASK_NR      				3
+
+extern struct task_struct *current;
 
 extern struct task_struct* task[];
 extern void sched_init(void);
+
+#define SCHED_DEBUG_ENABLE        	0
 
 #endif

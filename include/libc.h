@@ -12,6 +12,7 @@
 extern int vsnprintf(char *buf, int buf_len, const char *fmt, va_list ap);
 extern int sprintf(char *buf, const char *fmt,...);
 extern int strlen(const char *s);
+extern int strcmp(const char *str1, const char *str2);
 extern void memset(void *dst, char val, int size);
 extern int strncpy(char *dst,const char*src, int size);
 extern void memcpy(void *dst,const void *src, int size);

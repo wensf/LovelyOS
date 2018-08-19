@@ -8,8 +8,8 @@ CC 				= gcc
 LD 				= ld
 OBJCOPY 		= objcopy
 OBJDUMP			= objdump
-ASFLAGS         = -g
-CFLAGS 			= -Wall -g -I ../../include -I ../../include/lib -I ../../include/kernel -I ../../include/mm -fno-stack-protector -fno-builtin -nostdinc
+ASFLAGS         	= -W -g
+CFLAGS 			= -Wall -g -I ./ -fno-stack-protector -fno-builtin -nostdinc
 LDFLAGS 		= -Ttext=0x0100 -Map loader.map
 # --verbose
 

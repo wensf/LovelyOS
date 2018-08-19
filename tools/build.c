@@ -11,9 +11,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#define KERNEL_SECTOR_NR  32
+#define KERNEL_SECTOR_NR 128 
 #define MBR_SECTOR_NR     1
-#define LOADER_SECTOR_NR  8
+#define LOADER_SECTOR_NR  32
 
 int get_file_size(const char *path)
 {

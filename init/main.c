@@ -4,7 +4,7 @@
  * Create :
  * Last modified : 2016.10.5
  */
-
+#include <init.h>
 #include <libc.h>
 #include <traps.h>
 #include <irq.h>
@@ -14,35 +14,14 @@
 #include <system.h>
 #include <version.h>
 #include <printf.h>
+#include <buffer.h>
+#include <keyboard.h>
+#include <printk.h>
+#include <vfs.h>
+#include <chrdev.h>
+#include <tty.h>
 
-void init(void);
-
-int x = 10, y = 0x1;
-
-int tty_set_location( int xx, int yy)
-{
-	if ( xx > 79 ){
-		return -1;
-	}
-
-	if ( yy > 24 )
-	{
-		return -1;
-	}
-
-	x = xx; y = yy;
-
-	return 0;
-}
-
-void Enum_pci_device( void );
-void delay(void)
-{
-	volatile unsigned long c = 0;
-
-	while( c < 65536 ){ c++; }
-}
-
+struct kernel_param *kparam;
 /**
  * SS,ESP,EFLAGS,CS,EIP
  */
@@ -62,10 +41,14 @@ void delay(void)
 	  "mov %%ax, %%fs\n\t" \
 	  ::)
 
-#define _SYSCALL_fork  0
-#define _SYSCALL_pause 1
-#define _SYSCALL_read  2
-#define _SYSCALl_write 3
+#define _SYSCALL_fork  		0
+#define _SYSCALL_pause 		1
+#define _SYSCALL_sleep 		2
+#define _SYSCALL_open  		3
+#define _SYSCALL_read  		4
+#define _SYSCALL_write 		5
+#define _SYSCALL_close 		6
+#define _SYSCALL_dup   		7
 
 #define _syscall_0(type,name) \
 type name(void)\
@@ -129,18 +112,11 @@ type name(atype a, btype b, ctype c)\
 	}\
 }
 
-_syscall_0(int,fork)
-_syscall_0(int,pause)
-_syscall_3(int,read,int,fd,char *,buf,int,cnt)
-
-void system_call_test(void)
-{
-	int fd = 0;
-	char buf[4];
-	int cnt = 4;
-
-	read(fd, buf, cnt);
-}
+static inline _syscall_0(int,fork)
+static inline _syscall_0(int,pause)
+static inline _syscall_1(int,sleep,int,mseconds)
+static inline _syscall_3(int,open,const char *,file_name, int, mode, int, flag)
+static inline _syscall_1(int,dup,int,fd)
 
 int last_pid;
 
@@ -151,86 +127,183 @@ void global_variable_init(void)
 
 extern int timer_c;
 
+const int color[] = {0x80<<16,0x80<<8,0x80<<0};
+
+#include <graphics.h>
+#include <font.h>
+
+void vesa_test(void)
+{
+	unsigned int *p;
+
+	for ( int y = 0; y < 360; y++ )
+	{
+		p = (unsigned int *)(kparam->vaddr) + 1920*y;
+
+		for ( int i = 0; i < 1920; i++ )
+		{
+			*p++ = color[0];
+		}
+	}
+
+	for ( int y = 360; y < 720; y++ )
+	{
+		p = (unsigned int *)(kparam->vaddr) + 1920*y;
+
+		for ( int i = 0; i < 1920; i++ )
+		{
+			*p++ = color[1];
+		}
+	}
+
+	for ( int y = 720; y < 1080; y++ )
+	{
+		p = (unsigned int *)(kparam->vaddr) + 1920*y;
+
+		for ( int i = 0; i < 1920; i++ )
+		{
+			*p++ = color[2];
+		}
+	}
+}
+
+struct mem_info_struct
+{
+    unsigned int address_low;
+    unsigned int address_high;
+    unsigned int length_low;
+    unsigned int length_high;
+    unsigned int type;
+};
+
+void init(void);
+
 int main( int argc, char *argv[] )
 {
-	int ret = 0;
-	unsigned int ptr;
-
 	global_variable_init();
+	kparam = (struct kernel_param *)(0x98000);
+	vesa_test();
+	console_init();
+	printk("xres = % 4d, yres=% 4d, bpp=%d, video_addr=%08x\n",
+					kparam->xres,
+					kparam->yres,
+					kparam->bpp,
+					kparam->vaddr
+	);
 
-	printf("A tiny operation system kernel for intel x86 cpu !\n");
-	printf(version);
-	printf("\n");
+	struct mem_info_struct *mp;
+	mp = (struct mem_info_struct *)(0x98000+sizeof(struct kernel_param));
+	printk("BaseAddrL BaseAddrH LengthLow LengthHigh    Type\n");
+	int total_memory = 0;
+	for ( int i = 0; i < kparam->mem_cnt; i++ )
+    {
+        printk("%08x  %08x  %08x  %08x  %08x\n",
+               mp->address_low,
+               mp->address_high,
+               mp->length_low,
+               mp->length_high,
+               mp->type);
+        if ( mp->type == 1)
+        {
+            total_memory += mp->length_low;
+        }
+        mp++;
+    }
+    printk("RAM size %08x(%dKB)\n", total_memory, total_memory/1024);
 
 	trap_init();
 	IRQ_init();
 	init_8259A();
+	init_keyboard();
     mem_init(0x100000, 0x800000);
-
-	ptr = get_free_page();
-	if ( ptr != 0 )
-	{
-        printf("get_free_page address %08x\n", ptr);
-	}else{
-        printf("get_free_page failed\n");
-	}
-
-	free_page(ptr);
-
-	ptr = get_free_page();
-	if ( ptr != 0 )
-	{
-        printf("get_free_page address %08x\n", ptr);
-	}else{
-        printf("get_free_page failed\n");
-	}
-
+	vfs_init();
+	chrdev_init();
+	tty_init();
 	sched_init();
-
-	tty_set_location(10, 8);
-
     sti();
 	move_to_user_mode();
-
-
-	/**
-	 * Execute a system int 0x80 to call 'fork'
-	 * Inline Assembler syntax to avoid using
-	 * stack in user mode.
-	 */
-	__asm __volatile__ ("mov $0, %eax");
-	__asm __volatile__ ("int $0x80"
-                     :"=a"(ret)
-                     :);
-
-	if( ret == 0 )
+	if ( !fork() )
 	{
 		init();
 	}
-
-	int i = 10;
-	for(;;)
-	{
-		tty_set_location(10,15);
-		printf("In the parent timer_c = %d i = %d \n",timer_c, i);
-		i++;
-// 		pause();
-// 		delay();
-	}
+	for (;;) pause();
 }
+
+void task_1(void);
 
 
 void init(void)
 {
-	int i = 0;
+    int pid, i = 0;
+
+	(void)open("/dev/tty1",O_RDWR, 0);
+	(void)dup(0);
+	(void)dup(0);
+
+	printf("test printf syscall\n");
+
+	if (!(pid=fork()))
+	{
+		task_1();
+	}
 
 	for(;;)
 	{
-		tty_set_location(10,16);
-		printf("In the child timer_c = %d i = %d \n",timer_c, i);
 		i++;
+
+		printf("In the task 1 pid = %d state = %d timer i = %08x,ticks: %08d utime=% 8d ktime=% 8d",
+				((struct task_struct *)&buff[1])->pid,
+				((struct task_struct *)&buff[1])->state,
+				i,
+				timer_c,
+				current->u_time,
+				current->k_time);
+		pause();
+	}
+}
+
+
+void task_1(void)
+{
+	int i = 0;
+	int x = 0,y = 420;
+
+	for (;;)
+	{
 		i++;
-		i++;
-//		pause();
+		draw_text(0,360+32,"In the task 2 pid = %d state = %d timer i = %08x,ticks: %08d utime=% 8d ktime=% 8d",
+		 ((struct task_struct *)&buff[2])->pid,
+		 ((struct task_struct *)&buff[2])->state,
+				i,
+				timer_c,
+				current->u_time,
+				current->k_time
+		 );
+		 if( x > 0 )
+		 draw_v_line(x-1,y,1,96,0x80<<8);
+		 draw_bitmap(x,y,79,96,gImage_girl);
+		 x++; x %= 1920;
+		 sleep(40);
+#if 0
+		float color_tmp = 0;
+
+		float step = 256.0/360.0;
+        for ( int y = 0; y < 360; y++ )
+        {
+            unsigned int *p;
+            p = (unsigned int *)(0x200000) + 1920*y;
+            int tc = (int)(((int)color_tmp) << ((i % 3)*8));
+
+            for ( int x = 0; x < 1920; x++ )
+            {
+                *p++ = tc;
+            }
+            color_tmp += step;
+        }
+
+		memcpy( (unsigned int *)(kparam->vaddr) + 1920*720, (unsigned char *)(0x200000), 360 * 1920 * 4);
+#endif // 0
+
+		pause();
 	}
 }
