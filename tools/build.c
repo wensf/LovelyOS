@@ -33,9 +33,9 @@ int main( int argc, char **argv )
 	FILE *fp;
 	int cnt;
 
- 	if ( argc != 5 ){
+ 	if ( argc != 6 ){
 
-        printf("Usage : ./build xxx.bin xxx.img xxx_device\n");
+        printf("Usage : ./build xxx.bin xxx.img xxx_device logo\n");
         exit(1);
     }
 
@@ -110,7 +110,7 @@ int main( int argc, char **argv )
     }
 
     printf("ok %d bytes mbr writed to the first sector.\n", 512 *(MBR_SECTOR_NR+LOADER_SECTOR_NR)+ksize);
-
+	printf("cnt=%d\n",cnt);
     int fill_byte = (MBR_SECTOR_NR+LOADER_SECTOR_NR+KERNEL_SECTOR_NR) * 512 - cnt;
 
     printf("fill %d bytes to the file\n", fill_byte);
@@ -121,6 +121,35 @@ int main( int argc, char **argv )
         fwrite(&fill, 1,1,fp);
     }
 
+	/** write logo */
+	FILE *fp_logo;
+	fp_logo = fopen(argv[5], "r");
+
+	if ( !fp_logo )
+	{
+		perror("cant' load logo file");
+		goto done;
+	}
+
+	printf ("write logo to image file\n");
+	char buf[128];
+	int wb = 0, rb = 0;
+	
+	while(!feof(fp_logo))
+	{
+		rb += fread(buf,1,sizeof(buf),fp_logo);
+		if ( wb == 0 )
+		{
+			printf("%02x%02x%02x",buf[0],buf[1],buf[2]);
+		}
+		wb += fwrite(buf,1,sizeof(buf),fp);
+		
+	}
+	
+	fclose(fp_logo);
+	printf ("%d byte(s),%.2f(KB) logo to image file rb=%d\n", wb, wb/1024.0f,rb);
+
+done:
     fclose( fp );
 	free( fptr );
 

@@ -145,12 +145,61 @@ load_kernel:
 
 	/* .size load_kernel, .-load_kernel */
 	
+.global ramfs_packet
+	/*.type ramfs_packet, @object */
+	/*.def packet; .scl 2; .type 16;
+	.endef*/
+	ramfs_packet:
+	ramfs_size:
+		.byte 0x10
+	ramfs_reserved:
+		.byte 0x00
+	ramfs_count:
+		.word 0x7f
+	ramfs_bufoffset:
+		.word 0x0000
+	ramfs_bufseg:
+		.word 0x4000
+	ramfs_blockNum:
+	    .quad 0x00A1   /* read from sector number 161 */
+	/*.size packet, .-packet */		
+
 .global load_ramfs	
 	/*.type load_ramfs, @function */
 	/*.def load_ramfs; .scl 2; .type 16;
 	.endef */
 load_ramfs:
-	
+
+	push    %bp
+	mov     %sp, %bp	
+	push    %bx
+	push    %di
+	push    %si
+
+	mov     $0x80, %dl
+	mov     $0x42, %ah
+	mov     $ramfs_packet, %si
+	int     $0x13
+
+	jc      error
+
+	mov     $0x0, %esi
+	mov     $0x800000, %edi
+	mov     $64*1024, %ecx
+read:	
+	movl    %es:(%esi),%eax
+	movl    %eax, %fs:(%edi)
+	addl    $4, %esi
+	addl    $4, %edi
+	subl    $4, %ecx
+	jnz     read
+
+	pop     %si
+	pop     %di
+	pop     %bx
+	mov     %bp, %sp
+	pop     %bp	
+
 	ret
 	
 	/* .size load_ramfs, .-load_ramfs */
@@ -179,16 +228,18 @@ _start:
 	pushw   $0 /* index in  string array */
 	call	DispStrRealMode
 	addw    $0x6, %sp
-		
+
+	/** load the fatfs to 0x00800000(8MB) as ramfs */
+	mov		$0x4000, %ax
+	mov		%ax, %es
+	xor		%bx, %bx
+	call 	load_ramfs
+
 	/* load the kernel to 0x4000:0x0000 */
 	mov		$0x4000, %ax
 	mov		%ax, %es
 	xor		%bx, %bx
 	call	load_kernel
-	
-	/** load the fatfs to 0x00800000(8MB) as ramfs */
-
-	call 	load_ramfs
 
 	call	KillMotor
 

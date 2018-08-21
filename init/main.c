@@ -280,8 +280,13 @@ void task_1(void)
 				current->k_time
 		 );
 		 if( x > 0 )
+		 #if 0
 		 draw_v_line(x-1,y,1,96,0x80<<8);
 		 draw_bitmap(x,y,79,96,gImage_girl);
+		 #else
+		 draw_v_line(x-1,y,  1,163,0x80<<8);
+		 draw_bitmap(x,  y,120,163,(unsigned char*)(0x800000));		 
+		 #endif
 		 x++; x %= 1920;
 		 sleep(40);
 #if 0
