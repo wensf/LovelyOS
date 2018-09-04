@@ -5,6 +5,7 @@
  */
 #include <printf.h>
 #include <memory.h>
+#include <printk.h>
 
 #define MEM_LOW           (2*1024*1024)
 #define PAGING_MEM_SIZE   30*1024*1024
@@ -56,6 +57,47 @@ unsigned long get_free_page(void)
     return 0;
 }
 
+unsigned long get_free_pages( int page_nr )
+{
+	int flg = 0, cnt = 0, pidx = 0;
+
+	for ( int i = 0; i < PAGING_MEM_ITEM && !flg; i++ )
+	{
+		if ( mem_map[i] ){ continue; }
+
+		cnt = 1;
+		for ( int j = i+1, k = 1; (k < page_nr) && (j < PAGING_MEM_ITEM); j++,k++ )
+		{
+			if ( !mem_map[j] )
+			{
+				cnt++;
+			}else{
+                i = j;
+				break;
+			}
+
+			if ( cnt == page_nr )
+			{
+				pidx = i; flg = 1;
+				break;
+			}
+		}
+	}
+
+	if ( flg == 1 )
+	{
+		for ( int i = pidx; i < pidx+page_nr; i++ )
+		{
+			mem_map[i]++;
+		}
+
+		printk("alloc page start %08x, page_nr=%d\n", MEM_LOW + (pidx* 4096), page_nr);
+		return MEM_LOW + (pidx* 4096);
+	}else{
+		return (0);
+	}
+}
+
 /**
  * To free a page, make it unused.
  * @addr the page base address.
@@ -74,4 +116,26 @@ void free_page( unsigned long addr )
     {
         for(;;) ;
     }
+}
+
+/**
+ * To free pages, make it unused.
+ * @addr the page base address.
+ * @page_nr the number of page.
+ * @return none
+ */
+void free_pages( unsigned long addr, int page_nr )
+{
+	unsigned long va;
+	int i;
+
+	i = 0; va = addr;
+	while ( i < page_nr )
+	{
+		va -= MEM_LOW;
+		va >>= 12;
+		if ( mem_map[va] >0 ) mem_map[va]--;
+		i++;
+		va = addr + i*4096;
+	}
 }

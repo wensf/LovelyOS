@@ -31,7 +31,7 @@ struct regs
 	unsigned long ss;
 };
 
-void pt_copy(void *to, void *from, int cnt)
+void reg_copy(void *to, void *from, int cnt)
 {
 	memcpy(to, from, cnt);
 }
@@ -58,30 +58,30 @@ void kernel_stack_dump(struct regs *reg)
 
 /**
  * the one just the return address for sys_call0_for()
+ * int do_fork(int nr,unsigned long stack_start)
  */
-//int copy_process(int nr, long ebp, long edi, long esi, long gs,
-//			long none, long ebx, long ecx,
-//			long edx, long fs,long es, long ds,
-//			long eip, long cs, long eflags, long esp, long ss)
 int do_fork(int nr,unsigned long stack_start)
 {
 	struct task_struct *p;
 	struct regs *childreg;
+	unsigned long struct_tcb = get_free_pages(KERNEL_STACK_PAGES);
+	
+	printk("struct_tcb[%d]=%08x\n", nr, struct_tcb);
 
-	p = (struct task_struct *)&buff[nr];
+	p = (struct task_struct *)struct_tcb;
 	p->pid = last_pid;
 	p->state = TASK_RUNNING;
 	p->delay = 0;
-	p->thread.esp0 = (unsigned long)kernel_stack[nr] + (1024*8);
+	p->thread.esp0 = struct_tcb+KERNEL_STACK_PAGES*PAGE_SIZE;
 	p->thread.ss0 = SELECTOR_KERNEL_DATA;
 	p->thread.eip = (unsigned long)ret_from_fork;
 	p->thread.trace_bitmap =  0x80000000;
 	childreg = (struct regs *)((p->thread.esp0) - (sizeof(struct regs)));
-	pt_copy(childreg, (void*)(stack_start+4), sizeof(struct regs));
+	reg_copy(childreg, (void*)(stack_start+4), sizeof(struct regs));
 	p->thread.esp = (unsigned long)childreg;
 	
 	childreg->eax = 0;
-	childreg->esp = (unsigned long)user_stack[nr] + (1024*8);
+	childreg->esp = get_free_pages(USER_STACK_PAGES) + USER_STACK_SIZE;
 
 	task[nr] = p;
 

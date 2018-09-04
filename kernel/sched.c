@@ -3,6 +3,7 @@
 #include <system.h>
 #include <libc.h>
 #include <buffer.h>
+#include <memory.h>
 #include <printk.h>
 
 #if 1
@@ -65,7 +66,11 @@ void sched_init(void)
 	/**
      * Make first task by manual
      */
-	task[0] = (struct task_struct *)&buff[0];
+	unsigned long struct_tcb = get_free_pages(KERNEL_STACK_PAGES);
+	
+	printk("struct_tcb[%d]=%08x\n", 0, struct_tcb);
+	
+	task[0] = (struct task_struct *)struct_tcb;
 
 	current = task[0];
 
@@ -77,14 +82,14 @@ void sched_init(void)
 	task[0]->prev     = 0x0;
 	task[0]->next     = 0x0;
 	task[0]->thread.ss0  = SELECTOR_KERNEL_DATA;
-	task[0]->thread.esp0 = (unsigned long)(kernel_stack[0] + KERNEL_STACK_SIZE);
+	task[0]->thread.esp0 = struct_tcb + KERNEL_STACK_PAGES*PAGE_SIZE;
 	task[0]->thread.ss   = SELECTOR_USER_DATA;
-	task[0]->thread.esp  = (unsigned long)(user_stack[0] + USER_STACK_SIZE);
+	task[0]->thread.esp  = get_free_pages(USER_STACK_PAGES) + USER_STACK_SIZE;
 
 	/**
-       * Initalize the TSS structure for CPU.
-       * Each CPU has only one TSS structure
-       */
+     * Initalize the TSS structure for CPU.
+     * Each CPU has only one TSS structure
+     */
 	tss.back_link = 0;
 	tss.ss0  = task[0]->thread.ss0;
 	tss.esp0 = task[0]->thread.esp0;
