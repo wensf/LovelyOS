@@ -1,15 +1,12 @@
 #ifndef __DEVICE_H__
 #define __DEVICE_H__
 
-#include <bus.h>
-
 #define MAX_DEVICE_NR               8
 #define MAX_NAME_NR                16
 
 struct device
 {
-	char device_name[MAX_NAME_NR];
-	struct bus_type *bus;	
+	char device_name[MAX_NAME_NR];	
 	struct driver *driver;
 	int major, minor;
 	struct device *next;

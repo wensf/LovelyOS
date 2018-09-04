@@ -15,6 +15,8 @@ extern int _syscall_read( int fd, char *__buf, int cnt );
 extern int _syscall_write( int fd, const char *__buf, int cnt );
 extern int _syscall_close( int fd );
 extern int _syscall_dup( int fd );
+extern int _syscall_lseek( int fd, int offset, int whence );
+extern void _syscall_idle( void );
 
 typedef void (*fn_ptr)(void);
 
@@ -27,7 +29,9 @@ const fn_ptr sys_call_table[]=
 	(fn_ptr)_syscall_read,
 	(fn_ptr)_syscall_write,
 	(fn_ptr)_syscall_close,
-	(fn_ptr)_syscall_dup,	
+	(fn_ptr)_syscall_dup,
+	(fn_ptr)_syscall_lseek,
+	(fn_ptr)_syscall_idle,
 };
 
 const int nr_sys_calls = sizeof(sys_call_table)/sizeof(sys_call_table[0]);

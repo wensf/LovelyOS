@@ -50,7 +50,7 @@ void timer_interrupt(int cpl, unsigned long sp )
             }
         }
     }
-
+	
     if ( cpl > 0 )
     {
 		current->u_time++;

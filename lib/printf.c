@@ -33,6 +33,7 @@ int printf(const char *fmt,...)
 {
 	char buf[512];
 	va_list ap;
+	int i;
 
 	memset(buf,0,sizeof(buf));
 
@@ -40,23 +41,9 @@ int printf(const char *fmt,...)
 	vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
 
-	#if 1
-	write( 0, buf, strlen(buf) );
-	#else
-    int i = 0;
+	i = write( 0, buf, strlen(buf) );
 
-    while( buf[i] != '\0' )
-	{
-		if ( buf[i] == '\n'){
-		    y += 16; x = 0;
-		}else{
-	    	putchar(x, y, buf[i], 0xFFFFFF, 0x0);
-			x += 8;
-		}
-		i++;
-	}
-	#endif
-	return 0;
+	return (i);
 }
 
 int draw_text( int x, int y, const char *fmt,...)

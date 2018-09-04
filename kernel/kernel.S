@@ -43,7 +43,7 @@ _flush:
 
 clear_bss:
 
-#    call    setup_paging
+    call    setup_paging
 
 	jmpl	$0x08, $main
 
@@ -96,8 +96,8 @@ gdt_48:
     /*.type setup_paging, @function */
 /*    .def setup_paging; .scl 2; .type 32 */
 setup_paging:
-
-    movl $1024*5, %eax
+	
+    movl $1024*5, %ecx
     xorl %eax, %eax
     movl $0x00010000, %edi
     cld

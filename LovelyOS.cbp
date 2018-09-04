@@ -122,6 +122,9 @@
 		<Unit filename="mm/memory.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="mm/page.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="tools/build.c">
 			<Option compilerVar="CC" />
 		</Unit>

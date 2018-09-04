@@ -2,7 +2,7 @@
 #ifndef __SCHED_H__
 #define __SCHED_H__
 
-#include <vfs.h>
+#include <fs/vfs.h>
 
 #define SELECTOR_USER_CODE   (0x18 +3)
 #define SELECTOR_USER_DATA   (0x20 +3)

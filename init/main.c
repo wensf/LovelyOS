@@ -6,18 +6,20 @@
  */
 #include <init.h>
 #include <libc.h>
+#include <types.h>
 #include <traps.h>
 #include <irq.h>
 #include <8259A.h>
 #include <sched.h>
 #include <memory.h>
+#include <mm/page.h>
 #include <system.h>
 #include <version.h>
 #include <printf.h>
 #include <buffer.h>
 #include <keyboard.h>
 #include <printk.h>
-#include <vfs.h>
+#include <fs/vfs.h>
 #include <chrdev.h>
 #include <tty.h>
 
@@ -49,6 +51,8 @@ struct kernel_param *kparam;
 #define _SYSCALL_write 		5
 #define _SYSCALL_close 		6
 #define _SYSCALL_dup   		7
+#define _SYSCALL_lseek      8
+#define _SYSCALL_idle       9
 
 #define _syscall_0(type,name) \
 type name(void)\
@@ -117,7 +121,9 @@ static inline _syscall_0(int,pause)
 static inline _syscall_1(int,sleep,int,mseconds)
 static inline _syscall_3(int,open,const char *,file_name, int, mode, int, flag)
 static inline _syscall_1(int,dup,int,fd)
-
+static inline _syscall_3(int,lseek,int, fd,int,offset, int, whence)
+static inline _syscall_0(void,idle)
+	
 int last_pid;
 
 void global_variable_init(void)
@@ -182,6 +188,8 @@ int main( int argc, char *argv[] )
 {
 	global_variable_init();
 	kparam = (struct kernel_param *)(0x98000);
+    mem_init(0x200000, 0x800000);	
+	page_init();
 	vesa_test();
 	console_init();
 	printk("xres = % 4d, yres=% 4d, bpp=%d, video_addr=%08x\n",
@@ -190,11 +198,11 @@ int main( int argc, char *argv[] )
 					kparam->bpp,
 					kparam->vaddr
 	);
-
+	
 	struct mem_info_struct *mp;
 	mp = (struct mem_info_struct *)(0x98000+sizeof(struct kernel_param));
 	printk("BaseAddrL BaseAddrH LengthLow LengthHigh    Type\n");
-	int total_memory = 0;
+	uint32 total_memory = 0;
 	for ( int i = 0; i < kparam->mem_cnt; i++ )
     {
         printk("%08x  %08x  %08x  %08x  %08x\n",
@@ -210,12 +218,12 @@ int main( int argc, char *argv[] )
         mp++;
     }
     printk("RAM size %08x(%dKB)\n", total_memory, total_memory/1024);
+	printk("%s\n",version);
 
 	trap_init();
 	IRQ_init();
 	init_8259A();
 	init_keyboard();
-    mem_init(0x100000, 0x800000);
 	vfs_init();
 	chrdev_init();
 	tty_init();
@@ -226,7 +234,7 @@ int main( int argc, char *argv[] )
 	{
 		init();
 	}
-	for (;;) pause();
+	for (;;) idle();
 }
 
 void task_1(void);
@@ -235,13 +243,14 @@ void task_1(void);
 void init(void)
 {
     int pid, i = 0;
+	int last_count = 0;
 
 	(void)open("/dev/tty1",O_RDWR, 0);
 	(void)dup(0);
 	(void)dup(0);
 
 	printf("test printf syscall\n");
-
+	
 	if (!(pid=fork()))
 	{
 		task_1();
@@ -251,14 +260,18 @@ void init(void)
 	{
 		i++;
 
-		printf("In the task 1 pid = %d state = %d timer i = %08x,ticks: %08d utime=% 8d ktime=% 8d",
-				((struct task_struct *)&buff[1])->pid,
-				((struct task_struct *)&buff[1])->state,
-				i,
-				timer_c,
-				current->u_time,
-				current->k_time);
-		pause();
+		if ( last_count != timer_c )
+		{
+			last_count = timer_c;
+			printf("In the task 1 pid = %d state = %d timer i = %08x,ticks: %08d utime=%8d ktime=%8d\n",
+					((struct task_struct *)&buff[1])->pid,
+					((struct task_struct *)&buff[1])->state,
+					i,
+					timer_c,
+					current->u_time,
+					current->k_time);
+			lseek(0,0,SEEK_SET);
+		}    
 	}
 }
 
@@ -267,28 +280,33 @@ void task_1(void)
 {
 	int i = 0;
 	int x = 0,y = 420;
+	int last_count = 0;
 
 	for (;;)
 	{
 		i++;
-		draw_text(0,360+32,"In the task 2 pid = %d state = %d timer i = %08x,ticks: %08d utime=% 8d ktime=% 8d",
-		 ((struct task_struct *)&buff[2])->pid,
-		 ((struct task_struct *)&buff[2])->state,
-				i,
-				timer_c,
-				current->u_time,
-				current->k_time
-		 );
+		if ( last_count != timer_c )
+		{
+			last_count = timer_c;
+			draw_text(0,360+32,"In the task 2 pid = %d state = %d timer i = %08x,ticks: %08d utime=%8d ktime=%8d",
+			 ((struct task_struct *)&buff[2])->pid,
+			 ((struct task_struct *)&buff[2])->state,
+					i,
+					timer_c,
+					current->u_time,
+					current->k_time
+			 );
+		}
 		 if( x > 0 )
 		 #if 0
 		 draw_v_line(x-1,y,1,96,0x80<<8);
 		 draw_bitmap(x,y,79,96,gImage_girl);
 		 #else
-		 draw_v_line(x-1,y,  1,163,0x80<<8);
-		 draw_bitmap(x,  y,120,163,(unsigned char*)(0x800000));		 
+		 draw_v_line(x-1,y,  1,144,0x80<<8);
+		 draw_bitmap(x,  y,120,144,(unsigned char*)(0x800000));		 
 		 #endif
 		 x++; x %= 1920;
-		 sleep(40);
+		// sleep(40);
 #if 0
 		float color_tmp = 0;
 
@@ -309,6 +327,6 @@ void task_1(void)
 		memcpy( (unsigned int *)(kparam->vaddr) + 1920*720, (unsigned char *)(0x200000), 360 * 1920 * 4);
 #endif // 0
 
-		pause();
+		// pause();
 	}
 }

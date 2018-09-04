@@ -10,13 +10,6 @@ int printk(const char *fmt, ...);
 
 extern int last_pid;
 
-void task_struct_dump(struct task_struct *p)
-{
-#if 0
-	printk("pid = %d,state = %d,eip = %08x\n", p->pid,p->state,p->thread.eip);
-#endif
-}
-
 struct regs
 {
 	unsigned long eax;
@@ -80,58 +73,22 @@ int do_fork(int nr,unsigned long stack_start)
 	p->state = TASK_RUNNING;
 	p->delay = 0;
 	p->thread.esp0 = (unsigned long)kernel_stack[nr] + (1024*8);
-	//p->tss.ss0 = SELECTOR_KERNEL_DATA;
+	p->thread.ss0 = SELECTOR_KERNEL_DATA;
 	p->thread.eip = (unsigned long)ret_from_fork;
-	//p->thread.esp = p->tss.esp0;
 	p->thread.trace_bitmap =  0x80000000;
-
 	childreg = (struct regs *)((p->thread.esp0) - (sizeof(struct regs)));
-
 	pt_copy(childreg, (void*)(stack_start+4), sizeof(struct regs));
-
 	p->thread.esp = (unsigned long)childreg;
+	
 	childreg->eax = 0;
 	childreg->esp = (unsigned long)user_stack[nr] + (1024*8);
 
 	task[nr] = p;
-
-	#if 0
-	task_struct_dump(p);
-	kernel_stack_dump(childreg);
-	printk("child_reg address : %08x\n", childreg);
-	printk("thread.esp %08x\n", p->thread.esp);
-
-	printk("task[%d] kernel mode sta top %08x\n",nr, p->thread.esp0);
-	printk("task[%d] user mode stack top %08x\n",nr, childreg->esp);
-	printk("do_fork nr = %d, stack_start = %08x, tcp addr %08x\n", nr, stack_start, p);
-	#endif
 
 	return last_pid;
 }
 
 int find_empty_process(void)
 {
-	/*int i = -1;
-
-	printk("find_empty_process\n");
-
-	repeat:
-		if((++last_pid) < 0) last_pid = 1;
-		for( i = 0; i < TASK_NR; i++)
-		{
-			if( task[i]->pid == last_pid ) goto repeat;
-		}
-	for( i = 1; i < TASK_NR; i++)
-	{
-		if(!task[i]) break;//return i;
-	}
-	printk("i = %d last_pid = %d\n", i,last_pid);
-
-	return i;*/
-
-	int i;
-
-	i = ++last_pid;
-
-	return i;
+	return ++last_pid;
 }

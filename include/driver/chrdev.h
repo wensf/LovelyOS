@@ -7,7 +7,7 @@
 struct chrdrv
 {
 	char driver_name[MAX_NAME_NR];
-	struct file_operation *f_ops;	
+	struct file_operations *f_ops;	
 };
 
 struct chrdev

@@ -35,6 +35,10 @@
 .global syscall_close
 .global _syscall_dup	/* extern int _syscall_dup( int fd ); */
 .global syscall_dup
+.global _syscall_lseek   /* int syscall_lseek( int fd, int offset, int whence ); */
+.global syscall_lseek   
+.global _syscall_idle   /* int syscall_idle(void); */
+.global syscall_idle 	
 .global nr_sys_calls
 
 .align 4
@@ -172,6 +176,24 @@ _syscall_dup:
     addl  $4, %esp
 	call schedule
     ret	
+	
+.align 4
+_syscall_lseek:
+    pushl %edx
+	pushl %ecx
+	pushl %ebx
+    call syscall_lseek
+    addl  $12, %esp
+	call schedule
+    ret	
+	
+.align 4
+_syscall_idle:
+    hlt
+	call schedule
+    ret
+
+
 
 .global timer_int
 .global timer_interrupt

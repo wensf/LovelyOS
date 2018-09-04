@@ -1,10 +1,17 @@
 #include <libc.h>
 #include <chrdev.h>
+#include <fs/ramfs.h>
 
 struct chrdev *chrdevs[NR_CHRDEV];
 
-int add_device_node ( const char *dev_name, int mode )
+int add_device_node ( const char *dev_name, struct file_operations *f_ops, int mode )
 {
+	char buf[32];
+	
+	sprintf ( buf, "/dev/%s", dev_name );
+	
+	ramfs_create_file ( buf, f_ops, FILE );
+	
 	return 0;
 }
 
@@ -28,7 +35,7 @@ int chrdev_register( struct chrdev *chrdev, struct chrdrv *chrdrv )
 	chrdev->driver = chrdrv;
 	chrdevs[i] = chrdev;
 	
-	add_device_node(chrdev->dev_name, 0x1);
+	add_device_node(chrdev->dev_name, chrdrv->f_ops, 0);
 	
 	return 0;
 }

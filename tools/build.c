@@ -138,10 +138,6 @@ int main( int argc, char **argv )
 	while(!feof(fp_logo))
 	{
 		rb += fread(buf,1,sizeof(buf),fp_logo);
-		if ( wb == 0 )
-		{
-			printf("%02x%02x%02x",buf[0],buf[1],buf[2]);
-		}
 		wb += fwrite(buf,1,sizeof(buf),fp);
 		
 	}

@@ -1,4 +1,4 @@
-#include <dup.h>
+#include <fs/dup.h>
 
 int syscall_dup( int fd )
 {
