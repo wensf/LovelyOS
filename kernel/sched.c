@@ -6,7 +6,6 @@
 #include <memory.h>
 #include <printk.h>
 
-#if 1
 #define _local_irq_save(x) 	\
 __asm__ ("pushfl \n\t" 		\
 	"popl %0 \n\t" 			\
@@ -21,10 +20,6 @@ __asm__ ("pushl %0 \n\t" 		\
 	:							\
 	:"g" (x) 					\
 	:"memory")
-#else
-#define _local_irq_save(x)
-#define _local_irq_restore(x)
-#endif
 
 struct task_struct *task[TASK_NR];
 static struct tss_struct tss;
@@ -34,7 +29,10 @@ extern void timer_int(void);
 
 void schedule(void);
 
-int timer_c = 0;
+
+int draw_text( int x, int y, const char *fmt,...);
+
+volatile int timer_c = 0;
 void timer_interrupt(int cpl, unsigned long sp )
 {
     timer_c++;
@@ -52,12 +50,17 @@ void timer_interrupt(int cpl, unsigned long sp )
         }
     }
 	
+	// draw_text(0,0,"pid=%d cpl=%d", current->pid, cpl);
     if ( cpl > 0 )
     {
 		current->u_time++;
         schedule();
     }else{
 		current->k_time++;
+		if ( current->pid == 1 )
+		{
+			printk("**\n");
+		}
 	}
 }
 
@@ -69,6 +72,8 @@ void sched_init(void)
 	unsigned long struct_tcb = get_free_pages(KERNEL_STACK_PAGES);
 	
 	printk("struct_tcb[%d]=%08x\n", 0, struct_tcb);
+	
+	memset( task, 0, sizeof(task));
 	
 	task[0] = (struct task_struct *)struct_tcb;
 
@@ -96,15 +101,6 @@ void sched_init(void)
 	tss.ss   = task[0]->thread.ss;
 	tss.esp  = task[0]->thread.esp;
 
-	#if (SCHED_DEBUG_ENABLE==1)
-	printk("struct tss size is %d byte(s), addr is %08x\n",
-					sizeof(struct tss_struct),
-					&tss
-	);
-	printk("tss esp0 : %08x\n", tss.esp0);
-	printk("tss esp  : %08x\n", tss.esp);
-	#endif
-
 	set_tss_descriptor(5, tss);
 	__asm__ __volatile__(\
 		"mov %0, %%ax\n\t"\
@@ -130,30 +126,6 @@ void sched_init(void)
     outb(inb(0x21) & ~0x1, 0x21);
 }
 
-#if 0
-#define switch_to(prev, next, last)\
-do{\
-	__asm__ __volatile__(\
-        "pushl %%esi\n\t"\
-		"pushl %%edi\n\t"\
-		"pushl %%ebp\n\t"\
-		"movl %%esp, %0 \n\t" /* Save the ESP */\
-		"movl %3, %%esp\n\t" /* ReStore ESP */\
-		"movl $1f, %1\n\t" /* Save EIP */\
-		"pushl %4\n\t" /* Restore EIP */\
-		"ret\n\t"/*"jmp __switch_to\n\t"*/\
-		"1:\n\t"\
-		"popl %%ebp\n\t"\
-		"popl %%edi\n\t"\
-		"popl %%esi\n\t"\
-		:"=m"(prev->thread.esp), "=m"(prev->thread.eip),\
-		 "=b"(last)\
-		:"m"(next->thread.esp),"m"(next->thread.eip),\
-		 "g"(prev),"d"(next),"c"(prev)\
-   );\
-}while(0)
-
-#else
 #define switch_to(prev, next, last)\
 do{\
 	__asm__ __volatile__(\
@@ -174,10 +146,6 @@ do{\
 	    :"memory"\
    );\
 }while(0)
-#endif
-
-
-void task_struct_dump(struct task_struct *p);
 
 void schedule(void)
 {
@@ -205,7 +173,7 @@ void schedule(void)
     {
         i = 0;
     }
-
+	
 	if ( current ==  task[i] )
 	{
 		_local_irq_restore(eflags);
@@ -219,4 +187,6 @@ void schedule(void)
 	tss.esp0 = next->thread.esp0;
 	_local_irq_restore(eflags);
     switch_to(prev, next, last);
+	
+	draw_text(0,0,"i=%d", i);	
 }

@@ -43,17 +43,18 @@ struct kernel_param *kparam;
 	  "mov %%ax, %%fs\n\t" \
 	  ::)
 
-#define _SYSCALL_fork  		0
-#define _SYSCALL_pause 		1
-#define _SYSCALL_sleep 		2
-#define _SYSCALL_open  		3
-#define _SYSCALL_read  		4
-#define _SYSCALL_write 		5
-#define _SYSCALL_close 		6
-#define _SYSCALL_dup   		7
-#define _SYSCALL_lseek      8
-#define _SYSCALL_idle       9
-
+#define _SYSCALL_fork  			0
+#define _SYSCALL_pause 			1
+#define _SYSCALL_sleep 			2
+#define _SYSCALL_open  			3
+#define _SYSCALL_read  			4
+#define _SYSCALL_write 			5
+#define _SYSCALL_close 			6
+#define _SYSCALL_dup   			7
+#define _SYSCALL_lseek      	8
+#define _SYSCALL_idle       	9
+#define _SYSCALL_get_utime     10
+#define _SYSCALL_get_ktime     11
 #define _syscall_0(type,name) \
 type name(void)\
 {\
@@ -123,7 +124,9 @@ static inline _syscall_3(int,open,const char *,file_name, int, mode, int, flag)
 static inline _syscall_1(int,dup,int,fd)
 static inline _syscall_3(int,lseek,int, fd,int,offset, int, whence)
 static inline _syscall_0(void,idle)
-	
+static inline _syscall_0(unsigned int, get_utime)
+static inline _syscall_0(unsigned int, get_ktime)
+
 int last_pid;
 
 void global_variable_init(void)
@@ -131,7 +134,7 @@ void global_variable_init(void)
 	last_pid = 0;
 }
 
-extern int timer_c;
+extern volatile int timer_c;
 
 const int color[] = {0x80<<16,0x80<<8,0x80<<0};
 
@@ -188,7 +191,7 @@ int main( int argc, char *argv[] )
 {
 	global_variable_init();
 	kparam = (struct kernel_param *)(0x98000);
-    mem_init(0x200000, 0x800000);	
+    mem_init(0x200000, 0x800000);
 	page_init();
 	vesa_test();
 	console_init();
@@ -198,7 +201,7 @@ int main( int argc, char *argv[] )
 					kparam->bpp,
 					kparam->vaddr
 	);
-	
+
 	struct mem_info_struct *mp;
 	mp = (struct mem_info_struct *)(0x98000+sizeof(struct kernel_param));
 	printk("BaseAddrL BaseAddrH LengthLow LengthHigh    Type\n");
@@ -250,7 +253,7 @@ void init(void)
 	(void)dup(0);
 
 	printf("test printf syscall\n");
-	
+
 	if (!(pid=fork()))
 	{
 		task_1();
@@ -263,24 +266,33 @@ void init(void)
 		if ( last_count != timer_c )
 		{
 			last_count = timer_c;
-			printf("In the task 1 pid = %d state = %d timer i = %08x,ticks: %08d utime=%8d ktime=%8d\n",
-					((struct task_struct *)&buff[1])->pid,
-					((struct task_struct *)&buff[1])->state,
+			printf("pid=%d i=%08x,ticks: %08d utime=%8d ktime=%8d\n",
+					current->pid,
 					i,
 					timer_c,
-					current->u_time,
-					current->k_time);
+					get_utime(),
+					get_ktime());
 			lseek(0,0,SEEK_SET);
-		}    
+		}
+
+		for ( volatile int k = 0; k < 10000000; k++ );
 	}
 }
 
+void task_2(void);
 
 void task_1(void)
 {
 	int i = 0;
-	int x = 0,y = 420;
+	int x = 0,y = 420+32;
 	int last_count = 0;
+
+	int pid;
+
+	if (!(pid=fork()))
+	{
+		task_2();
+	}
 
 	for (;;)
 	{
@@ -288,13 +300,12 @@ void task_1(void)
 		if ( last_count != timer_c )
 		{
 			last_count = timer_c;
-			draw_text(0,360+32,"In the task 2 pid = %d state = %d timer i = %08x,ticks: %08d utime=%8d ktime=%8d",
-			 ((struct task_struct *)&buff[2])->pid,
-			 ((struct task_struct *)&buff[2])->state,
+			draw_text(0,360+16,"pid=%d i=%08x,ticks: %08d utime=%8d ktime=%8d",
+					current->pid,
 					i,
 					timer_c,
-					current->u_time,
-					current->k_time
+					get_utime(),
+					get_ktime()
 			 );
 		}
 		 if( x > 0 )
@@ -303,10 +314,10 @@ void task_1(void)
 		 draw_bitmap(x,y,79,96,gImage_girl);
 		 #else
 		 draw_v_line(x-1,y,  1,144,0x80<<8);
-		 draw_bitmap(x,  y,120,144,(unsigned char*)(0x800000));		 
+		 draw_bitmap(x,  y,120,144,(unsigned char*)(0x800000));
 		 #endif
 		 x++; x %= 1920;
-		// sleep(40);
+		 // sleep(40);
 #if 0
 		float color_tmp = 0;
 
@@ -326,7 +337,99 @@ void task_1(void)
 
 		memcpy( (unsigned int *)(kparam->vaddr) + 1920*720, (unsigned char *)(0x200000), 360 * 1920 * 4);
 #endif // 0
+	}
+}
 
-		// pause();
+void task_3(void);
+
+void task_2(void)
+{
+	int i = 0;
+	int last_count = 0;
+
+	int pid;
+
+	if (!(pid=fork()))
+	{
+		task_3();
+	}
+
+	for (;;)
+	{
+		i++;
+		if ( last_count != timer_c )
+		{
+			last_count = timer_c;
+			draw_text(0,360+32,"pid=%d i=%08x,ticks: %08d utime=%8d ktime=%8d",
+					current->pid,
+					i,
+					timer_c,
+					get_utime(),
+					get_ktime()
+			 );
+		}
+
+		for ( int k = 0; k < 100000; k++ );
+	}
+}
+
+void task_4(void);
+
+void task_3(void)
+{
+	int i = 0, j = 0;
+	int last_count = 0;
+
+	int pid;
+
+	if (!(pid=fork()))
+	{
+		task_4();
+	}	
+	
+	for (;;)
+	{
+		i++;
+		if ( last_count != timer_c )
+		{
+			last_count = timer_c;
+			j++;
+			draw_text(0,360+48,"pid=%d i=%08x,j=%08d, ticks: %08d utime=%8d ktime=%8d",
+					current->pid,
+					i,
+					j,
+					timer_c,
+					get_utime(),
+					get_ktime()
+			 );
+		}
+
+		// sleep(10);
+
+		for ( int k = 0; k < 5000000; k++ );
+	}
+}
+
+void task_4(void)
+{
+	int i = 0, j = 0;
+	int last_count = 0;
+
+	for (;;)
+	{
+		i++;
+		if ( last_count != timer_c )
+		{
+			last_count = timer_c;
+			j++;
+			draw_text(0,360+64,"pid=%d i=%08x,j=%08d, ticks: %08d utime=%8d ktime=%8d",
+					current->pid,
+					i,
+					j,
+					timer_c,
+					get_utime(),
+					get_ktime()
+			 );
+		}
 	}
 }

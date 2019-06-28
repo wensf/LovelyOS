@@ -7,7 +7,7 @@ CC 				= gcc
 LD 				= ld
 OBJCOPY 		= objcopy
 OBJDUMP			= objdump
-CFLAGS 			= -Wall -g -O1 -Iinclude -I include/lib -I include/kernel -I include/mm -I include/init -I include/fs -I include/driver -fno-stack-protector -fno-builtin -nostdinc
+CFLAGS 			= -Wall -g -O2 -Iinclude -I include/lib -I include/kernel -I include/mm -I include/init -I include/fs -I include/driver -fno-stack-protector -fno-builtin -nostdinc
 LDFLAGS 		= -T.lds
 #LDFLAGS         = -Ttext=0x00108000
 BOOT_BIN        = boot.bin

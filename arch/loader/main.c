@@ -82,7 +82,9 @@ int get_key ( int timeout )
 
 void clear_screen(void)
 {
-	// Clear screen
+	/** 
+	 * Clear screen
+	 */
 
 	__asm__ __volatile__(
 		"mov $0x06, %%ah\n\t"
@@ -202,7 +204,7 @@ int init_vesa( int xres, int yres, int bpp )
         get_key(0);
         return (-1);
     }else{
-        printf("supported x=%d,y=%d, bit_per_pixel=%d video_addr=%08x\n",ax,ay,bit_pixel, video_addr);
+        printf("supported x=%d,y=%d, bit_per_pixel=%d video_addr=%08x\n",ax,ay,bit_pixel,video_addr);
     }
 	kp->xres  = xres;
 	kp->yres  = yres;

@@ -69,12 +69,17 @@ int do_fork(int nr,unsigned long stack_start)
 	printk("struct_tcb[%d]=%08x\n", nr, struct_tcb);
 
 	p = (struct task_struct *)struct_tcb;
-	p->pid = last_pid;
-	p->state = TASK_RUNNING;
-	p->delay = 0;
+	p->pid    = last_pid;
+	p->state  = TASK_RUNNING;
+	p->delay  = 0;
+	p->u_time = 0;
+	p->k_time = 0;
+	p->prev   = 0x0;
+	p->next   = 0x0;
 	p->thread.esp0 = struct_tcb+KERNEL_STACK_PAGES*PAGE_SIZE;
 	p->thread.ss0 = SELECTOR_KERNEL_DATA;
 	p->thread.eip = (unsigned long)ret_from_fork;
+	p->thread.ss  = SELECTOR_USER_DATA;	
 	p->thread.trace_bitmap =  0x80000000;
 	childreg = (struct regs *)((p->thread.esp0) - (sizeof(struct regs)));
 	reg_copy(childreg, (void*)(stack_start+4), sizeof(struct regs));

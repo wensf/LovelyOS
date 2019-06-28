@@ -6,7 +6,7 @@
  */
 #include <stdarg.h>
 
-#define MAX_BUF_LEN   128
+#define MAX_BUF_LEN   256
 #define ZEROPAD       0
 #define SPACEPAD      1
 
@@ -239,7 +239,7 @@ void bzero(char *dst, int len)
 int itoa(int num,char *str)
 {
 	int i,j = 0;
-	char buffer[32];
+	char buffer[64];
 
 	if(num < 0){
 		*str++ = '-';
@@ -271,7 +271,7 @@ static const char *table = "0123456789abcdef";
 
 int itoh(int num,char *str)
 {
-	char buffer[32];
+	char buffer[64];
 	int n = 8;
 
 	if(!str){

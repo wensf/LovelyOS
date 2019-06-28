@@ -28,6 +28,20 @@ int tty_open( struct file *filp )
 	return 0;
 }
 
+void delay( int us )
+{
+	volatile int loop;
+	
+	while ( us-- > 0 )
+	{
+		loop = 100000;
+		while ( loop-- > 0 )
+		{
+			;
+		}
+	}
+}
+
 int tty_write( struct file *filp, const char *__buf, int len )
 {
     int i = 0;
@@ -55,6 +69,8 @@ int tty_write( struct file *filp, const char *__buf, int len )
 		filp->w_o = 1920 * (1080/3);
 	}
 
+	delay(500);
+	
 	return 0;
 }
 

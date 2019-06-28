@@ -48,7 +48,7 @@ int printf(const char *fmt,...)
 
 int draw_text( int x, int y, const char *fmt,...)
 {
-	char buf[128];
+	char buf[256];
 	va_list ap;
 
 	memset(buf,0,sizeof(buf));

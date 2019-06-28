@@ -93,9 +93,6 @@
 		<Unit filename="kernel/keyboard.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="kernel/pages.c">
-			<Option compilerVar="CC" />
-		</Unit>
 		<Unit filename="kernel/printk.c">
 			<Option compilerVar="CC" />
 		</Unit>

@@ -28,7 +28,7 @@
 .global syscall_open  	/* int _syscall_open( const char *file_name, int mode, int flag ); */
 .global _syscall_open
 .global syscall_read  	/* int _syscall_read( int fd, char *__buf, int cnt ); */
-.global _syscall_read 
+.global _syscall_read
 .global syscall_write 	/* int syscall_write ( int fd, const char *__buf, int len ) in write.c */
 .global _syscall_write
 .global _syscall_close	/* extern int _syscall_close( int fd ); */
@@ -36,9 +36,13 @@
 .global _syscall_dup	/* extern int _syscall_dup( int fd ); */
 .global syscall_dup
 .global _syscall_lseek   /* int syscall_lseek( int fd, int offset, int whence ); */
-.global syscall_lseek   
+.global syscall_lseek
 .global _syscall_idle   /* int syscall_idle(void); */
-.global syscall_idle 	
+.global syscall_idle
+.global _syscall_get_utime /* unsigned int get_utime(void); */
+.global syscall_get_utime
+.global _syscall_get_ktime /* unsigned int get_ktime(void); */
+.global syscall_get_ktime
 .global nr_sys_calls
 
 .align 4
@@ -75,7 +79,7 @@ system_call:
 	popl  %edx
 
 	call  *sys_call_table(,%eax,4)
-	
+
 	addl  $4, %esp
 	popl  %ebx
 	popl  %ecx
@@ -108,7 +112,7 @@ ret_from_fork:
 .align 4
 _syscall_fork:
 	call find_empty_process
-	testl %eax, %eax
+	test %eax, %eax
 	js 1f
 	pushl %esp
 	pushl %eax
@@ -129,7 +133,7 @@ _syscall_sleep:
     addl  $4, %esp
 	call schedule
     ret
-	
+
 .align 4
 _syscall_open:
     pushl %edx
@@ -138,8 +142,8 @@ _syscall_open:
     call syscall_open
     addl  $12, %esp
 	call schedule
-    ret	
-	
+    ret
+
 .align 4
 _syscall_read:
     pushl %edx
@@ -148,7 +152,7 @@ _syscall_read:
     call syscall_read
     addl  $12, %esp
 	call schedule
-    ret		
+    ret
 
 .align 4
 _syscall_write:
@@ -159,7 +163,7 @@ _syscall_write:
     addl  $12, %esp
 	call schedule
     ret
-	
+
 .align 4
 _syscall_close:
     pushl %ebx
@@ -167,16 +171,16 @@ _syscall_close:
     addl  $4, %esp
 	call schedule
     ret
-	
-	
+
+
 .align 4
 _syscall_dup:
     pushl %ebx
     call syscall_dup
     addl  $4, %esp
 	call schedule
-    ret	
-	
+    ret
+
 .align 4
 _syscall_lseek:
     pushl %edx
@@ -185,15 +189,23 @@ _syscall_lseek:
     call syscall_lseek
     addl  $12, %esp
 	call schedule
-    ret	
-	
+    ret
+
 .align 4
 _syscall_idle:
     hlt
 	call schedule
     ret
 
+.align 4
+_syscall_get_utime:
+    call syscall_get_utime
+    ret
 
+.align 4
+_syscall_get_ktime:
+    call syscall_get_ktime
+    ret
 
 .global timer_int
 .global timer_interrupt
@@ -218,7 +230,7 @@ timer_int:
 	movb $0x20, %al
 	outb %al, $0x20
 
-    movl  44(%esp), %eax                
+    movl  44(%esp), %eax
     andl  $3, %eax            # cpl
     pushl %eax
     movl $0x10,%edx
@@ -243,8 +255,8 @@ timer_int:
     pop   %ds
     addl  $4, %esp
     iret
-	
-	
+
+
 
 .global _keyboard_irq
 .global keyboard_irq
@@ -269,7 +281,7 @@ _keyboard_irq:
 	movb $0x20, %al
 	outb %al, $0x20
 
-    movl  44(%esp), %eax                
+    movl  44(%esp), %eax
     andl  $3, %eax            # cpl
     pushl %eax
     movl $0x10,%edx
@@ -340,7 +352,7 @@ _generic_protected_fault:
     pop   %ds
     addl  $4, %esp
     iret
-	
+
 
 .global _int3_trap
 .global int3_trap

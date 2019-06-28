@@ -14,11 +14,15 @@
 #define TASK_INTERRUPTABLE  2
 #define TASK_SLEEP          3
 
-#define KERNEL_STACK_SIZE   4*1024
-#define USER_STACK_SIZE     8*1024
+#define PAGE_SIZE           4096
+#define KERNEL_STACK_SIZE   PAGE_SIZE*2
+#define USER_STACK_SIZE     PAGE_SIZE*4
 
 #define HZ 100
 #define TIME_INTERVAL (1193180/HZ)
+
+#define KERNEL_STACK_PAGES 	(KERNEL_STACK_SIZE/PAGE_SIZE)
+#define USER_STACK_PAGES    (USER_STACK_SIZE/PAGE_SIZE)
 
 struct tss_struct
 {
@@ -74,7 +78,7 @@ struct task_struct
 	struct task_struct *next;
 };
 
-#define TASK_NR      				3
+#define TASK_NR      				6
 
 extern struct task_struct *current;
 
