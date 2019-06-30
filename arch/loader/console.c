@@ -40,10 +40,11 @@ int get_position( int *x, int *y )
 {
     int cx = 0, cy = 0;
 
-    __asm__ __volatile__(" mov $0x4, %%ah\n\t"
-                         " int $10\n\t"
-                         " mov %%dh, %0\n\t"
-                         " mov %%dl, %1\n\t"
+    __asm__ __volatile__(" mov $0x3, %%ah\n\t"
+						 " mov $0x0, %%bh\n\t"
+                         " int $0x10\n\t"
+                         " mov %%dh, %1\n\t"
+                         " mov %%dl, %0\n\t"
                          :"=m"(cx),"=m"(cy)
                          );
     *x = cx; *y = cy;
@@ -54,6 +55,5 @@ int get_position( int *x, int *y )
 void console_init(void)
 {
     get_position( &x, &y );
-    x  = 0;
-    y += 2;
+    x  = 0; y++;
 }

@@ -69,7 +69,7 @@ int tty_write( struct file *filp, const char *__buf, int len )
 		filp->w_o = 1920 * (1080/3);
 	}
 
-	delay(500);
+	// delay(500);
 	
 	return 0;
 }

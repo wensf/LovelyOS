@@ -50,18 +50,13 @@ void timer_interrupt(int cpl, unsigned long sp )
         }
     }
 	
-	// draw_text(0,0,"pid=%d cpl=%d", current->pid, cpl);
     if ( cpl > 0 )
     {
 		current->u_time++;
         schedule();
     }else{
 		current->k_time++;
-		if ( current->pid == 1 )
-		{
-			printk("**\n");
-		}
-	}
+    }
 }
 
 void sched_init(void)
@@ -176,6 +171,7 @@ void schedule(void)
 	
 	if ( current ==  task[i] )
 	{
+		draw_text(0,0,"e=%d", i);	
 		_local_irq_restore(eflags);
 		return;
 	}

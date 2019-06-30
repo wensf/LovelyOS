@@ -186,6 +186,7 @@ struct mem_info_struct
 };
 
 void init(void);
+volatile uint32 idle_cnt = 0;
 
 int main( int argc, char *argv[] )
 {
@@ -237,7 +238,11 @@ int main( int argc, char *argv[] )
 	{
 		init();
 	}
-	for (;;) idle();
+	for (;;) 
+	{
+		idle_cnt++;
+		idle();
+	}
 }
 
 void task_1(void);
@@ -266,16 +271,18 @@ void init(void)
 		if ( last_count != timer_c )
 		{
 			last_count = timer_c;
-			printf("pid=%d i=%08x,ticks: %08d utime=%8d ktime=%8d\n",
+			printf("pid=%d i=%08x,ticks: %08d utime=%8d ktime=%8d idle_cnt=%08d\n",
 					current->pid,
 					i,
 					timer_c,
 					get_utime(),
-					get_ktime());
+					get_ktime(),
+					idle_cnt);
 			lseek(0,0,SEEK_SET);
 		}
 
-		for ( volatile int k = 0; k < 10000000; k++ );
+		// for ( int k = 0; k < 10000000; k++ );
+		sleep(1000);
 	}
 }
 
@@ -313,11 +320,11 @@ void task_1(void)
 		 draw_v_line(x-1,y,1,96,0x80<<8);
 		 draw_bitmap(x,y,79,96,gImage_girl);
 		 #else
-		 draw_v_line(x-1,y,  1,144,0x80<<8);
-		 draw_bitmap(x,  y,120,144,(unsigned char*)(0x800000));
+	//	 draw_v_line(x-1,y,  1,144,0x80<<8);
+	//	 draw_bitmap(x,  y,120,144,(unsigned char*)(0x800000));
 		 #endif
 		 x++; x %= 1920;
-		 // sleep(40);
+		 sleep(2000);
 #if 0
 		float color_tmp = 0;
 
@@ -369,7 +376,8 @@ void task_2(void)
 			 );
 		}
 
-		for ( int k = 0; k < 100000; k++ );
+		//for ( int k = 0; k < 100000; k++ );
+		sleep(3000);
 	}
 }
 
@@ -404,9 +412,9 @@ void task_3(void)
 			 );
 		}
 
-		// sleep(10);
-
-		for ( int k = 0; k < 5000000; k++ );
+		//for ( int k = 0; k < 5000000; k++ );
+		
+		sleep(4000);
 	}
 }
 
@@ -431,5 +439,7 @@ void task_4(void)
 					get_ktime()
 			 );
 		}
+		
+		sleep(5000);
 	}
 }

@@ -82,7 +82,7 @@ int get_key ( int timeout )
 
 void clear_screen(void)
 {
-	/** 
+	/**
 	 * Clear screen
 	 */
 
@@ -364,6 +364,7 @@ int main(void)
 
     console_init();
     printf("console_init() completed.\n");
+	
     mem_p = (struct mem_info_struct *)( 0x8000 + sizeof(struct kernel_param) );
 	kp = (struct kernel_param *)(0x8000);
 	kp->mem_cnt = 0;
@@ -374,30 +375,21 @@ int main(void)
 		mem_p++; kp->mem_cnt++;
 	}while( r != 0 );
 	printf("%d block memory found in tatal\n", kp->mem_cnt);
+
+	printf("[ disk read test ] load a sector data from disk...\n");
+	load_kernel_file("KERNEL.BIN");
+
+	printf("Press any key to boot kernel\n");
+	get_key(0);
+	
+	#if 1
 	r = init_vesa( XRES, YRES, BPP );
 	if ( r == -1 )
 	{
         get_key(0);
         clear_screen();
 	}
-
-	#if 0
-	unsigned long *pvaddr = ( unsigned long *)video_addr;
-	for ( int x = 0; x < 100; x++ )
-	{
-		for ( int y = 0; y < 100; y++ )
-		{
-			*pvaddr++ = 0xFFFF;
-		}
-	}
-	
-	get_key(0);
 	#endif
 	
-	return 0;
-
-	printf("[ disk read test ] load a sector data from disk...");
-	load_kernel_file("KERNEL.BIN");
-
 	return 0;
 }

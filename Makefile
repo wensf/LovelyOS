@@ -49,9 +49,10 @@ $(LOADER_BIN):
 	cd arch/loader; make
 
 #----------------------------------------------------------------------------------
+run:
+	bochs -f bochsrc.bxrc
 dump:
 	objdump -D -mi386 kernel.elf
-
 image:
 	tools/build arch/boot.bin arch/loader/loader.bin kernel.bin arch/b.img tools/logo.bin
 	dd if=arch/b.img of=arch/c.img bs=512 count=512 conv=notrunc
@@ -61,7 +62,7 @@ untool:
 	rm tools/*.o tools/build
 install:
 	sudo dd if=arch/c.img of=/dev/sdb bs=512 count=512 conv=notrunc
-cleanDebug:
+clean:
 	cd arch/; make cleanDebug
 	rm init/*.o kernel/*.o lib/*.o mm/*.o *.bin *.elf *.dis
 	rm Debug/ -rf

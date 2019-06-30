@@ -26,9 +26,14 @@ int printf(const char *fmt,...)
 
     while( *p != '\0' ){
 		if ( *p == '\n'){
-		    y++; x = 0;
+		    y++;
+			if ( (y/25) < 1 ){
+				x = 0;
+			}else{
+				x = 50;
+			}
 		}else{
-	    	putc(x++, y, *p);
+	    	putc(x++, y%25, *p);
 		}
 
 		p++;
