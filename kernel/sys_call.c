@@ -19,6 +19,7 @@ extern int _syscall_lseek( int fd, int offset, int whence );
 extern void _syscall_idle( void );
 extern unsigned int _syscall_get_utime( void );
 extern unsigned int _syscall_get_ktime( void );
+extern unsigned int _syscall_execve(const char *file_name);
 
 typedef void (*fn_ptr)(void);
 
@@ -36,6 +37,7 @@ const fn_ptr sys_call_table[]=
 	(fn_ptr)_syscall_idle,
 	(fn_ptr)_syscall_get_utime,
 	(fn_ptr)_syscall_get_ktime,
+	(fn_ptr)_syscall_execve,
 };
 
 const int nr_sys_calls = sizeof(sys_call_table)/sizeof(sys_call_table[0]);

@@ -109,14 +109,14 @@ void sched_init(void)
     set_igate_descriptor(0x20, 3, timer_int);
 
     /**
-     * binary, mode 3, LSB/MSB, ch 0
+     * Binary, mode 3, LSB/MSB, ch 0
      */
     outb(0x36, 0x43);
     outb( TIME_INTERVAL & 0xFF, 0x40);
     outb( TIME_INTERVAL>>8, 0x40);
 
     /**
-     * enable the timer interrupt
+     * Enable the timer interrupt
      */
     outb(inb(0x21) & ~0x1, 0x21);
 }
@@ -141,6 +141,12 @@ do{\
 	    :"memory"\
    );\
 }while(0)
+
+
+/**
+ * The simplest scheduling method, just for normal work well,
+ * TASK_NR must be greater than or equal to 2 including idle tasks.
+ */
 
 void schedule(void)
 {
@@ -171,7 +177,6 @@ void schedule(void)
 	
 	if ( current ==  task[i] )
 	{
-		draw_text(0,0,"e=%d", i);	
 		_local_irq_restore(eflags);
 		return;
 	}
@@ -183,6 +188,7 @@ void schedule(void)
 	tss.esp0 = next->thread.esp0;
 	_local_irq_restore(eflags);
     switch_to(prev, next, last);
-	
-	draw_text(0,0,"i=%d", i);	
 }
+
+
+

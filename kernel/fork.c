@@ -10,27 +10,6 @@ int printk(const char *fmt, ...);
 
 extern int last_pid;
 
-struct regs
-{
-	unsigned long eax;
-	unsigned long ebx;
-	unsigned long ecx;
-	unsigned long edx;
-	unsigned long esi;
-	unsigned long edi;
-	unsigned long ebp;
-	unsigned long fs;
-	unsigned long gs;
-	unsigned long ds;
-	unsigned long es;
-	unsigned long error; /* as a error */
-	unsigned long eip;
-	unsigned long cs;
-	unsigned long eflags;
-	unsigned long esp;
-	unsigned long ss;
-};
-
 void reg_copy(void *to, void *from, int cnt)
 {
 	memcpy(to, from, cnt);
@@ -64,7 +43,9 @@ int do_fork(int nr,unsigned long stack_start)
 {
 	struct task_struct *p;
 	struct regs *childreg;
-	unsigned long struct_tcb = get_free_pages(KERNEL_STACK_PAGES);
+	unsigned long struct_tcb;
+	
+	struct_tcb = get_free_pages(KERNEL_STACK_PAGES);
 	
 	printk("struct_tcb[%d]=%08x\n", nr, struct_tcb);
 
@@ -76,16 +57,21 @@ int do_fork(int nr,unsigned long stack_start)
 	p->k_time = 0;
 	p->prev   = 0x0;
 	p->next   = 0x0;
+	/* alloc memory block to new task kernel stack */
 	p->thread.esp0 = struct_tcb+KERNEL_STACK_PAGES*PAGE_SIZE;
 	p->thread.ss0 = SELECTOR_KERNEL_DATA;
 	p->thread.eip = (unsigned long)ret_from_fork;
 	p->thread.ss  = SELECTOR_USER_DATA;	
 	p->thread.trace_bitmap =  0x80000000;
+	/* copy current task kernel stack to new task kernel stack */
 	childreg = (struct regs *)((p->thread.esp0) - (sizeof(struct regs)));
 	reg_copy(childreg, (void*)(stack_start+4), sizeof(struct regs));
 	p->thread.esp = (unsigned long)childreg;
-	
+
+	/*  child task EAX=0 */ 
 	childreg->eax = 0;
+	
+	/* alloc memory block to new task user stack */
 	childreg->esp = get_free_pages(USER_STACK_PAGES) + USER_STACK_SIZE;
 
 	task[nr] = p;
@@ -97,3 +83,4 @@ int find_empty_process(void)
 {
 	return ++last_pid;
 }
+

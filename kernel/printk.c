@@ -40,7 +40,7 @@ int printk(const char *fmt,...)
 			}
 			origin_y = y;
 		}else{
-	    	putchar(x, y, buf[i], 0xFFFFFF, 0x0);
+	    	putchar(x, y, buf[i], 0xFFFFFF, 0x80<<16);
 			x += 8;
 			if ( x > ( origin_x+(1920/4) ) )
 			{

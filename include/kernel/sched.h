@@ -78,6 +78,28 @@ struct task_struct
 	struct task_struct *next;
 };
 
+struct regs
+{
+	unsigned long eax;
+	unsigned long ebx;
+	unsigned long ecx;
+	unsigned long edx;
+	unsigned long esi;
+	unsigned long edi;
+	unsigned long ebp;
+	unsigned long fs;
+	unsigned long gs;
+	unsigned long ds;
+	unsigned long es;
+	unsigned long error; /* as a error */
+	unsigned long eip;
+	unsigned long cs;
+	unsigned long eflags;
+	unsigned long esp;
+	unsigned long ss;
+};
+
+
 #define TASK_NR      				6
 
 extern struct task_struct *current;

@@ -55,6 +55,8 @@ struct kernel_param *kparam;
 #define _SYSCALL_idle       	9
 #define _SYSCALL_get_utime     10
 #define _SYSCALL_get_ktime     11
+#define _SYSCALL_execve        12
+
 #define _syscall_0(type,name) \
 type name(void)\
 {\
@@ -126,6 +128,7 @@ static inline _syscall_3(int,lseek,int, fd,int,offset, int, whence)
 static inline _syscall_0(void,idle)
 static inline _syscall_0(unsigned int, get_utime)
 static inline _syscall_0(unsigned int, get_ktime)
+static inline _syscall_1(int32, execve, const char *, file_name)
 
 int last_pid;
 
@@ -288,6 +291,15 @@ void init(void)
 
 void task_2(void);
 
+
+void new_task_entry(void)
+{
+	printf("new task_entry,pid=%d\n", current->pid);
+
+	task_2();
+}
+
+
 void task_1(void)
 {
 	int i = 0;
@@ -298,7 +310,9 @@ void task_1(void)
 
 	if (!(pid=fork()))
 	{
-		task_2();
+		// task_2();
+		execve("/bin/sh");
+		while(1);
 	}
 
 	for (;;)

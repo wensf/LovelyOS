@@ -43,6 +43,8 @@
 .global syscall_get_utime
 .global _syscall_get_ktime /* unsigned int get_ktime(void); */
 .global syscall_get_ktime
+.global _syscall_execve
+.global syscall_execve		/* int syscall_execve(const char *file_name); */
 .global nr_sys_calls
 
 .align 4
@@ -57,10 +59,10 @@ bad_sys_call:
 system_call:
     cmpl $nr_sys_calls,%eax
 	ja   bad_sys_call
-	push  $0                 /* as a dummy 'error code' */
-	push  %ds               /**/
-	push  %es                /*  eip,cs eflags, esp, ss */
-	push  %gs                /*  save by CPU. */
+	pushl  $0                 /* as a dummy 'error code' */
+	push  %ds                /**/
+	push  %es                /*  eip,cs eflags, esp, ss saved by CPU.*/
+	push  %gs                 
 	push  %fs                /*  we need to save the ds,es,gs,fs, */
 	pushl %ebp               /*  ebp,edi,esi, edx, ecx,ebx*/
 	pushl %edi               /*  Note: eax don't need to save */
@@ -71,7 +73,7 @@ system_call:
 	pushl %eax
 
 	pushl %edx
-	movl  $0x10, %edx
+	movl  $0x10, %edx		/* Ring0 Code Segment */
 	mov   %dx, %ds
 	mov   %dx, %es
 	mov   %dx, %fs
@@ -206,6 +208,17 @@ _syscall_get_utime:
 _syscall_get_ktime:
     call syscall_get_ktime
     ret
+
+
+    EIP = 56	/* EIP save at kernel stack in offset 56 */
+.align 4
+_syscall_execve:
+	pushl %ebx 	/* EBX point to the param file_name */
+	lea EIP(%esp),%eax
+	pushl %eax  /* EIP push as param for call syscall_execve */
+	call syscall_execve
+	addl $8,%esp
+	ret
 
 .global timer_int
 .global timer_interrupt
