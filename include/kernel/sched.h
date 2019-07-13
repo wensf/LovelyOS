@@ -64,6 +64,11 @@ struct thread_struct
 	unsigned long trace_bitmap;
 };
 
+struct mm_struct
+{
+	unsigned long  stack_start;
+};
+
 struct task_struct
 {
 	int pid;
@@ -74,6 +79,10 @@ struct task_struct
 	struct thread_struct thread;
 	struct file *file[FSAL_MAX_OPENED_FILE];
 	int file_counter[FSAL_MAX_OPENED_FILE];
+	unsigned int pgd;
+	struct mm_struct mm;
+	int last_fd;
+	struct task_struct *parent;
 	struct task_struct *prev;
 	struct task_struct *next;
 };
@@ -110,3 +119,5 @@ extern void sched_init(void);
 #define SCHED_DEBUG_ENABLE        	0
 
 #endif
+
+

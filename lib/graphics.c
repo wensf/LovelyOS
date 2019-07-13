@@ -1,4 +1,5 @@
 #include <graphics.h>
+#include <printk.h>
 
 extern void setpixel( int x, int y, int color);
 
@@ -13,6 +14,7 @@ void draw_bitmap(int fx, int fy, int width, int height, const unsigned char *bit
 		{
 			rgb = ((unsigned long)p[2]<<16) | p[1]<<8 | p[0];
 			p += 3;
+			// printk("(%d,%d)\n",x,y);
 			setpixel(x,y,rgb);
 		}
 	}

@@ -31,12 +31,10 @@ inline _syscall_3(int,write,int,fd,char *,__buf, int, len)
 
 int printf(const char *fmt,...)
 {
-	char buf[512];
+	char buf[128];
 	va_list ap;
-	int i;
-
-	memset(buf,0,sizeof(buf));
-
+ 	int i;
+	
 	va_start(ap, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
@@ -73,11 +71,11 @@ int draw_text( int x, int y, const char *fmt,...)
 	return 0;
 }
 
-unsigned long *vaddr;
+unsigned long vaddr;
 
 int console_init(void)
 {
-	vaddr = (unsigned long *)(kparam->vaddr);
+	vaddr = 0x1000000;
 
 	return 0;
 }

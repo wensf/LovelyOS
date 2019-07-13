@@ -7,7 +7,6 @@
 
 struct struct_filesystem ramfs = 
 {
-		
 };
 
 int split_path( const char *path, char *p_path_name )
@@ -17,8 +16,10 @@ int split_path( const char *path, char *p_path_name )
 
 int get_last_unused(void)
 {
-	static int last_unused = 0;
-	return last_unused++;
+	int last_unused;
+
+	last_unused = current->last_fd++;
+	return last_unused;
 }
 
 int file_free( struct file *filp )
@@ -80,19 +81,47 @@ struct file* file_alloc(void)
 
 extern int file_free(struct file* filp);
 
+unsigned char get_fs_byte(const char * addr)
+{
+	unsigned register char _v;
+
+	__asm__ ("movb %%fs:%1,%0":"=r" (_v):"m" (*addr));
+	return _v;
+}
+
+int get_fs_string(char *dstr,const char *sstr)
+{
+	char c;
+	const char *p;
+	int i;
+
+	p = sstr;
+	i = 0;
+	do{
+		c = get_fs_byte(p++);
+		dstr[i++] = c;
+	}while( c != '\0' );
+
+	return (i);
+}
 
 int ramfs_open( const char *path, int mode, int flags )
 {
 	struct file *filp;
 	int32 f_id;
+
+//	char file_name[MAX_NAME];
+//	get_fs_string(file_name,path);
 	
-	printk("in ramfs_open\n");
+//	printk("in ramfs_open addr=%08x,path=%s, mode=%d, flags=%d\n",(uint32)path,path,mode,flags);
 	
 	f_id = ramfile_fid_find((const int8*)path);
-	if ( (f_id < 0) && !(mode|O_CREAT) )
+	if ( (f_id < 0) && !(mode & O_CREAT) )
 	{	
-		printk("not found %s\n", path);
+		printk("not found at %08x -> %s\n", (uint32)path,path);
 		return (-1);
+	}else{
+		printk("fid =%d\n", f_id);
 	}
 	
 	#if 0
@@ -107,6 +136,8 @@ int ramfs_open( const char *path, int mode, int flags )
 	ram_file *ram_filp;
 	
 	ram_filp = &ram_files[f_id];
+	printk("ram_files at %08x ram_filp=%08x, f_open=%08x\n",(uint32)&ram_files,ram_filp->f_ops,ram_filp->f_ops->f_open);
+	
 	filp = file_alloc();
 	if ( !filp )
 	{
@@ -125,13 +156,14 @@ int ramfs_open( const char *path, int mode, int flags )
 		printk("last_unused failed\n");
 		return (-1);
 	}
+	printk("ramfs_open fd=%d\n",last_unused);
 	
 	current->file[last_unused] = filp;
 	current->file_counter[last_unused]++;
 	
 	if ( filp->f_ops && filp->f_ops->f_open )
-	{	
-		printk("to call f_open()\n");
+ 	{	
+ 		printk("to call f_open()\n");
 		filp->f_ops->f_open(filp);
 	}else{
 		printk("no f_open to call\n");
@@ -174,12 +206,20 @@ int ramfs_write( int fd, const char *__buf, int len )
 {
 	struct file *filp;
 	int i = 0;
-		
-	filp = current->file[fd];	
+
+	if ( fd > MAX_RAM_FILE-1 ){
+		printk("%s:%d error: fd=%d\n",__FILE__,__LINE__,fd);
+		while(1);
+		// return (-1);
+	}
+	
+	filp = current->file[fd];
 	
 	if ( filp && filp->f_ops && filp->f_ops->f_write )
 	{
 		i = filp->f_ops->f_write( filp, __buf, len );
+	}else{
+		printk("ramfs_write [%d] null point\n",fd);
 	}
 	
 	return (i);

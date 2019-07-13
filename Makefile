@@ -38,8 +38,7 @@ Debug : $(BOOT_BIN) $(LOADER_BIN) $(OBJS_KERNEL) $(OBJC_KERNEL) $(OBJS_LIB)  $(O
 	$(LD) $(LDFLAGS) --oformat elf32-i386 -o kernel.elf $(OBJS_KERNEL) $(OBJC_KERNEL) $(OBJS_LIB) $(OBJC_LIB)  $(OBJC_MM) $(OBJC_INIT) $(OBJC_FS) $(OBJC_DRIVER)
 	$(OBJCOPY) -S -O binary kernel.elf $(KERNEL_BIN)
 	$(OBJDUMP) -D kernel.elf > kernel.dis
-	mkdir -p Debug;
-	cp kernel.elf Debug/os
+	make shell
 	make image
 
 $(BOOT_BIN):
@@ -54,10 +53,12 @@ run:
 dump:
 	objdump -D -mi386 kernel.elf
 image:
-	tools/build arch/boot.bin arch/loader/loader.bin kernel.bin arch/b.img tools/logo.bin
+	tools/build arch/b.img arch/boot.bin arch/loader/loader.bin kernel.bin  user/sh.bin tools/logo.bin
 	dd if=arch/b.img of=arch/c.img bs=512 count=512 conv=notrunc
 tool:
 	gcc -o tools/build tools/build.c
+shell:
+	cd user; make
 untool:
 	rm tools/*.o tools/build
 install:
@@ -67,4 +68,5 @@ clean:
 	rm init/*.o kernel/*.o lib/*.o mm/*.o *.bin *.elf *.dis
 	rm Debug/ -rf
 	cd arch/loader/; make cleanDebug;
+	cd user/; make clean;
 #---------------------------------------------------------------------------------

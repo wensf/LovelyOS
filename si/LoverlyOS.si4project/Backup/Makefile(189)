@@ -1,0 +1,36 @@
+
+#-----------------------------------------------------------------------------------------------
+# File Makefile for all the sources file to make the objects.
+# 2016.04.18
+#-----------------------------------------------------------------------------------------------
+AS				= as
+CC 				= gcc
+LD 				= ld
+OBJCOPY 		= objcopy
+OBJDUMP			= objdump
+ASFLAGS         	= -W -g
+CFLAGS 			= -Wall -O2 -g -I ./ -fno-stack-protector -fno-builtin -nostdinc
+LDFLAGS 		= -Tsh.lds -Map init.map
+# --verbose
+
+INIT_ELF        = init.elf
+INIT_DIS        = init.dis
+INIT_BIN 		= init.bin
+
+SRCS_INIT = $(wildcard *.S)
+SRCC_INIT = $(wildcard *.c)
+
+OBJS_INIT = $(patsubst %.S,%.o, $(SRCS_INIT))
+OBJC_INIT = $(patsubst %.c,%.o, $(SRCC_INIT))
+
+sh : $(OBJS_INIT) $(OBJC_INIT)
+	$(LD) $(LDFLAGS) -o $(INIT_ELF) $(OBJS_INIT) $(OBJC_INIT)
+	$(OBJCOPY) -S -O binary  $(INIT_ELF) $(LOADER_BIN)
+	$(OBJDUMP) -D $(INIT_ELF) > $(INIT_DIS)
+$(OBJS_INIT):$(SRCS_INIT)
+	$(AS) $(ASFLAGS) $< -o $@
+
+clean:
+	rm *.bin *.elf *.o *.map *.dis
+	
+#---------------------------------------------------------------------------------

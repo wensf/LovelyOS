@@ -6,7 +6,7 @@
  */
 #include <stdarg.h>
 
-#define MAX_BUF_LEN   256
+#define MAX_BUF_LEN   128
 #define ZEROPAD       0
 #define SPACEPAD      1
 
@@ -50,9 +50,11 @@ int strncpy(char *dst,const char*src, int size)
 
 int strcmp(const char *src1,const char *src2)
 {
-	while((*src1 == *src2) && (*src1 != '\0')){
-		src1++;
-		src2++;
+	while( (*src1) && (*src2)){
+		if ( *src1 == *src2 ){
+			src1++;
+			src2++;
+		}
 	}
 
 	if((*src1 == '\0') && (*src2 == '\0'))
@@ -63,16 +65,19 @@ int strcmp(const char *src1,const char *src2)
 
 int strncmp(const char *str1, const char *str2, int len)
 {
-	while(len-- > 0){
+	while ( (len-- > 0) && *str1 && *str2 ){
 		if(*str1 != *str2){
-			return 1;
+			return *str1-*str2;
 		}
 
 		str1++;
 		str2++;
 	}
 
-	return 0;
+	if ((*str1 == '\0') && (*str2 == '\0'))
+		return 0;	/* equal. */
+	else
+		return -1;	/* not equal. */
 }
 
 

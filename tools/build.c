@@ -10,10 +10,15 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
-#define KERNEL_SECTOR_NR 128 
-#define MBR_SECTOR_NR     1
+ 
+#define MBR_SECTOR_NR      1
 #define LOADER_SECTOR_NR  32
+#define KERNEL_SECTOR_NR 128
+#define SHELL_SECTOR_NR   32
+#define LOGO_SECTOR_NR    92
+
+#define SECTOR_NR (MBR_SECTOR_NR+LOADER_SECTOR_NR+KERNEL_SECTOR_NR+SHELL_SECTOR_NR+LOGO_SECTOR_NR)
+
 
 int get_file_size(const char *path)
 {
@@ -32,120 +37,122 @@ int main( int argc, char **argv )
 	unsigned char *fptr;
 	FILE *fp;
 	int cnt;
+	int offset;
 
- 	if ( argc != 6 ){
+ 	if ( argc != 7 ){
 
-        printf("Usage : ./build xxx.bin xxx.img xxx_device logo\n");
+        printf("Usage : ./build xxx.img mbr.bin loader.bin kernel.bin logo.bin sh.bin\n");
         exit(1);
     }
 
-	int ksize = get_file_size(argv[3]);
-	printf("kernel image size %d\n", ksize);
-
-	fptr = (unsigned char *)malloc(sizeof(unsigned char)*((MBR_SECTOR_NR+LOADER_SECTOR_NR+KERNEL_SECTOR_NR))*512);
+	fptr = (unsigned char *)malloc(sizeof(unsigned char)*(SECTOR_NR)*512);
 	if ( !fptr ){
 		perror("malloc");
 		exit(1);
 	}
-	printf("%d bytes buffer malloed\n", (MBR_SECTOR_NR+LOADER_SECTOR_NR+KERNEL_SECTOR_NR)*512);
+	printf("%d bytes buffer malloed\n",SECTOR_NR*512);
 
-    fp = fopen(argv[1], "rb");
+
+	// 读取boot.bin(MBR),写入扇区: 0x00000000, 扇区数: MBR_SECTOR_NR
+
+    fp = fopen(argv[2], "rb");
     if ( !fp ){
         perror("fopen");
-        exit(1);
+        goto error;
     }
 
-    cnt = fread( fptr, 1, MBR_SECTOR_NR*512, fp );
+	offset = 0;
+    cnt = fread( fptr+offset, 1, MBR_SECTOR_NR*512, fp );
     if ( cnt == 0 ){
-        printf("fread %s error, size not currected!\n", argv[1]);
-        exit(1);
-    }
-
-	printf("read %s %d byte(s)\n", argv[1], cnt);
-
-    fclose( fp );
-
-    fp = fopen( argv[2], "rb" );
-    if ( !fp ){
-         perror("fopen");
-         exit(1);
-    }
-
-    cnt = fread( fptr + MBR_SECTOR_NR*512, 1, 512*LOADER_SECTOR_NR, fp );
-	if ( cnt < 0 ){
         printf("fread %s error, size not currected!\n", argv[2]);
-        fclose( fp );
-        exit(1);
+        goto error;
+    }
+    fclose( fp );
+	printf("read %s %d byte(s)\n", argv[2], cnt);
+	printf("write offset at %08x\n",offset);	
+
+	// 读取load.bin，     写入扇区: 0x00000200， 扇区数: LOADER_SECTOR_NR
+    fp = fopen( argv[3], "rb" );
+    if ( !fp ){
+       	perror("fopen");
+        goto error;
     }
 
-	printf("read %s %d byte(s)\n", argv[2], cnt);
-	fclose( fp );
+	offset = MBR_SECTOR_NR*512;
+    cnt = fread( fptr+offset, 1, 512*LOADER_SECTOR_NR, fp );
+	if ( cnt < 0 ){
+        printf("fread %s error, size not currected!\n", argv[3]);
+		goto error;
+    }
+	fclose(fp);
+	printf("read %s %d byte(s)\n", argv[3], cnt);
+	printf("write offset at %08x\n",offset);
 
-	fp = fopen( argv[3], "rb");
+	// 读取kernel.bin，    写入扇区: 0x00004200, 扇区数: KERNEL_SECTOR_NR 
+	fp = fopen( argv[4], "rb");
 	if ( !fp ){
 		perror("fopen");
-		exit(1);
+		goto error;
 	}
 
-	cnt = fread( fptr + (MBR_SECTOR_NR+LOADER_SECTOR_NR)*512, 1, ksize, fp );
+	offset = (MBR_SECTOR_NR+LOADER_SECTOR_NR)*512;
+	cnt = fread( fptr+offset, 1, KERNEL_SECTOR_NR*512, fp );
 	if ( cnt < 0 ){
 		perror("fread");
-		exit(1);
+		goto error;
 	}
 	fclose( fp );
-	printf("read %s %d byte(s)\n", argv[3], cnt);
+	printf("read %s %d byte(s)\n", argv[4], cnt);
+	printf("write offset at %08x\n",offset);
 
-	fp = fopen( argv[4], "wb");
+
+	// 读取sh.bin，     写入扇区: 0x00022a00, 扇区数: SHELL_SECTOR_NR 
+	fp = fopen( argv[5], "rb");
 	if ( !fp ){
 		perror("fopen");
-		exit(1);
+		goto error;
+	}
+	offset = (MBR_SECTOR_NR+LOADER_SECTOR_NR+KERNEL_SECTOR_NR)*512;
+    cnt = fread( fptr+offset, 1, SHELL_SECTOR_NR*512, fp );
+    if ( cnt <= 0 ){
+		perror("fread");
+		goto error;
+	}
+	fclose( fp );
+	printf("read %s %d byte(s)\n", argv[5], cnt);	
+	printf("write offset at %08x\n",offset);
+
+
+	// 读取logo.bin，     写入扇区: 0x00014200, 扇区数: LOGOL_SECTOR_NR 
+
+	fp = fopen( argv[6], "rb");
+	if ( !fp ){
+		perror("fopen");
+		goto error;
+	}
+	offset = (MBR_SECTOR_NR+LOADER_SECTOR_NR+KERNEL_SECTOR_NR+SHELL_SECTOR_NR)*512;
+    cnt = fread( fptr+offset, 1, LOGO_SECTOR_NR*512, fp );
+    if ( cnt <= 0 ){
+		perror("fread");
+		goto error;
+	}
+	fclose( fp );
+	printf("read %s %d byte(s)\n", argv[6], cnt);	
+	printf("write offset at %08x\n",offset);	
+
+
+	// 缓冲区写入IMG文件
+	FILE *p_img;
+	p_img = fopen(argv[1], "wb");
+	if ( !p_img ){
+		perror("fopen");
+		goto error;
 	}
 
-    cnt = fwrite( fptr, 1, (MBR_SECTOR_NR+LOADER_SECTOR_NR)*512 + ksize, fp );
-    if ( cnt != ksize+(MBR_SECTOR_NR+LOADER_SECTOR_NR)*512 ){
-        perror("fwrite");
-        fclose( fp );
-		free( fptr );
-        exit(1);
-    }
-
-    printf("ok %d bytes mbr writed to the first sector.\n", 512 *(MBR_SECTOR_NR+LOADER_SECTOR_NR)+ksize);
-	printf("cnt=%d\n",cnt);
-    int fill_byte = (MBR_SECTOR_NR+LOADER_SECTOR_NR+KERNEL_SECTOR_NR) * 512 - cnt;
-
-    printf("fill %d bytes to the file\n", fill_byte);
-
-    char fill = 0;
-    while(fill_byte-->0)
-    {
-        fwrite(&fill, 1,1,fp);
-    }
-
-	/** write logo */
-	FILE *fp_logo;
-	fp_logo = fopen(argv[5], "r");
-
-	if ( !fp_logo )
-	{
-		perror("cant' load logo file");
-		goto done;
-	}
-
-	printf ("write logo to image file\n");
-	char buf[128];
-	int wb = 0, rb = 0;
+	cnt = fwrite(fptr,1,SECTOR_NR*512,p_img);
+	printf("IMG %d Byte(s) Copy to %s In Total\n", cnt,argv[1]);
 	
-	while(!feof(fp_logo))
-	{
-		rb += fread(buf,1,sizeof(buf),fp_logo);
-		wb += fwrite(buf,1,sizeof(buf),fp);
-		
-	}
-	
-	fclose(fp_logo);
-	printf ("%d byte(s),%.2f(KB) logo to image file rb=%d\n", wb, wb/1024.0f,rb);
-
-done:
+error:
     fclose( fp );
 	free( fptr );
 

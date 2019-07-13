@@ -59,6 +59,8 @@ void timer_interrupt(int cpl, unsigned long sp )
     }
 }
 
+#define SIZEOF_NR(x) (sizeof(x)/sizeof(x[0]))
+
 void sched_init(void)
 {
 	/**
@@ -69,6 +71,16 @@ void sched_init(void)
 	printk("struct_tcb[%d]=%08x\n", 0, struct_tcb);
 	
 	memset( task, 0, sizeof(task));
+
+	/**
+	 * Link the task
+	 */
+	for ( int i = 0; i < SIZEOF_NR(task)-1; i++ )
+	{
+		task[i]->next = task[i+1];
+	}
+	task[SIZEOF_NR(task)-1]->next = task[0];
+	
 	
 	task[0] = (struct task_struct *)struct_tcb;
 
@@ -84,8 +96,14 @@ void sched_init(void)
 	task[0]->thread.ss0  = SELECTOR_KERNEL_DATA;
 	task[0]->thread.esp0 = struct_tcb + KERNEL_STACK_PAGES*PAGE_SIZE;
 	task[0]->thread.ss   = SELECTOR_USER_DATA;
-	task[0]->thread.esp  = get_free_pages(USER_STACK_PAGES) + USER_STACK_SIZE;
+	task[0]->mm.stack_start = get_free_pages(USER_STACK_PAGES);
+	task[0]->thread.esp  = task[0]->mm.stack_start + USER_STACK_SIZE;
+	task[0]->pgd = 0x100000; // kernel page directory initiazied at kernel.S setup_paging()
+	task[0]->parent = 0;
+	task[0]->prev = task[0];
+	task[0]->next = task[0];
 
+	printk("task[0] user stack at %08x\n",task[0]->thread.esp);
 	/**
      * Initalize the TSS structure for CPU.
      * Each CPU has only one TSS structure
@@ -153,29 +171,37 @@ void schedule(void)
 	struct task_struct *next;
 	struct task_struct *last;
 	struct task_struct *prev;
-	static int i = 1;
+	static int i = 0;
 	unsigned long eflags;
 	int nr, k;
 
 	_local_irq_save(eflags);
 
+#if 0
 	nr = sizeof(task)/sizeof(task[0]);
     k = 0;
-#if 1
+
     do{
         i++;
         i %= nr;
         i = (i==0)?(1):(i);
         k++;
-    }while ( (task[i]->state != TASK_RUNNING) && (k < nr) );
-#endif // 0
+    }while ( (!task[i] ) || ((task[i]->state != TASK_RUNNING) && (k < nr)) );
 
     if ( k == nr )
     {
         i = 0;
     }
-	
-	if ( current ==  task[i] )
+
+#else
+
+	do{
+		i++; i %= 4;
+	}while(!task[i]);
+#endif
+
+#if 1
+	if ( (current == task[i]) || !task[i] )
 	{
 		_local_irq_restore(eflags);
 		return;
@@ -184,10 +210,23 @@ void schedule(void)
  	next     = task[i];
 	prev     = current;
 	current  = next;
+#endif
 
+#if 1
+	__asm__ __volatile__(\
+			"movl %0,%%eax\n\t"\
+			"movl %%eax, %%cr3\n\t"
+			:\
+			:"g"(current->pgd)\
+			:"eax"\
+			);
+#endif
+	
+	draw_text(1920/2,0,"-%d-",i);	
 	tss.esp0 = next->thread.esp0;
 	_local_irq_restore(eflags);
     switch_to(prev, next, last);
+	
 }
 
 

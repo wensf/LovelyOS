@@ -8,6 +8,8 @@
 #ifndef __PRINTF_H__
 #define __PRINTF_H__
 
+extern unsigned long vaddr;
+
 extern int console_init(void);
 extern int draw_text( int x, int y, const char *fmt,... );
 extern int draw_text_kernel( int, int y, const char *fmt,... );

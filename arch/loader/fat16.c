@@ -45,7 +45,7 @@ int driver_load_sector( int lba, int n, unsigned char *buf )
 	lba_info.blockNum = lba;
 	
 	
-	printf("address packet size = %d bytes, addr = %08x\n", sizeof(lba_info),(unsigned int)&lba_info);
+	printf("lba size = %d bytes, addr = %08x\n", sizeof(lba_info),(unsigned int)&lba_info);
 	
 	printf("size %d, count %d, seg %04x, offset %04x, block %lld\n",
 			lba_info.psize,

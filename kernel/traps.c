@@ -1,11 +1,15 @@
 #include <printk.h>
 #include <system.h>
 #include <libc.h>
+#include <types.h>
 #include <sched.h>
 
 extern void _int3_trap(int cpl, unsigned long esp );
 extern void system_call(void);
 extern void _generic_protected_fault( int cpl, unsigned long esp );
+extern void _operation_fault(int cpl, unsigned long esp);
+extern void _page_fault(int cpl, unsigned long esp);
+extern void _parallel_interrupt(int cpl, unsigned long esp);
 
 extern struct gate_desc idt[]; /* IDT define at kernel/kernel.s */
 
@@ -53,6 +57,14 @@ void int3_trap(int cpl, unsigned long esp )
 	while(1);
 }
 
+void operation_fault(int cpl, unsigned long esp )
+{
+	printk("operation_fault\n");
+	kernel_panic(cpl, esp);
+	while(1);
+}
+
+
 void double_fault(int cpl, unsigned long esp )
 {
 	printk("double_fault\n");
@@ -67,19 +79,34 @@ void generic_protected_fault( int cpl, unsigned long esp )
 	while(1);
 }
 
+extern void do_page_fault(void);
+
 void page_fault(int cpl, unsigned long esp )
 { 
-	printk("page_fault\n");
+	#if 0
 	kernel_panic(cpl, esp);
 	while(1);
+	#else
+	do_page_fault();
+	#endif
 }
+
+void parallel_interrupt(int cpl, unsigned long esp)
+{
+	//printk("parallel_interrupt\n");
+	//kernel_panic(cpl, esp);
+	// while(1);
+}
+
 
 void trap_init( void )
 {
 	set_trap_descriptor(0x0, 0,divide_error);
 	set_trap_descriptor(0x3, 3,_int3_trap);
+	set_trap_descriptor(0x6, 0,_operation_fault);
 	set_trap_descriptor(0x8, 0,double_fault);
 	set_trap_descriptor(0xD, 0,_generic_protected_fault);
-	set_trap_descriptor(0xE, 0,page_fault);
+	set_trap_descriptor(0xE, 0,_page_fault);
+	set_trap_descriptor(0x27, 0,_parallel_interrupt);
 	set_system_descriptor(0x80,3,system_call);
 }

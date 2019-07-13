@@ -22,6 +22,7 @@
 #include <fs/vfs.h>
 #include <chrdev.h>
 #include <tty.h>
+#include <printf.h>
 
 struct kernel_param *kparam;
 /**
@@ -56,6 +57,7 @@ struct kernel_param *kparam;
 #define _SYSCALL_get_utime     10
 #define _SYSCALL_get_ktime     11
 #define _SYSCALL_execve        12
+#define _SYSCALL_getpid        13
 
 #define _syscall_0(type,name) \
 type name(void)\
@@ -129,6 +131,7 @@ static inline _syscall_0(void,idle)
 static inline _syscall_0(unsigned int, get_utime)
 static inline _syscall_0(unsigned int, get_ktime)
 static inline _syscall_1(int32, execve, const char *, file_name)
+static inline _syscall_0(unsigned int, getpid)
 
 int last_pid;
 
@@ -150,7 +153,7 @@ void vesa_test(void)
 
 	for ( int y = 0; y < 360; y++ )
 	{
-		p = (unsigned int *)(kparam->vaddr) + 1920*y;
+		p = (unsigned int *)(vaddr) + 1920*y;
 
 		for ( int i = 0; i < 1920; i++ )
 		{
@@ -160,7 +163,7 @@ void vesa_test(void)
 
 	for ( int y = 360; y < 720; y++ )
 	{
-		p = (unsigned int *)(kparam->vaddr) + 1920*y;
+		p = (unsigned int *)(vaddr) + 1920*y;
 
 		for ( int i = 0; i < 1920; i++ )
 		{
@@ -170,7 +173,7 @@ void vesa_test(void)
 
 	for ( int y = 720; y < 1080; y++ )
 	{
-		p = (unsigned int *)(kparam->vaddr) + 1920*y;
+		p = (unsigned int *)(vaddr) + 1920*y;
 
 		for ( int i = 0; i < 1920; i++ )
 		{
@@ -189,16 +192,17 @@ struct mem_info_struct
 };
 
 void init(void);
-volatile uint32 idle_cnt = 0;
+
+int idle_cnt;
 
 int main( int argc, char *argv[] )
 {
 	global_variable_init();
 	kparam = (struct kernel_param *)(0x98000);
     mem_init(0x200000, 0x800000);
+	console_init();
 	page_init();
 	vesa_test();
-	console_init();
 	printk("xres = % 4d, yres=% 4d, bpp=%d, video_addr=%08x\n",
 					kparam->xres,
 					kparam->yres,
@@ -206,23 +210,25 @@ int main( int argc, char *argv[] )
 					kparam->vaddr
 	);
 
-	struct mem_info_struct *mp;
-	mp = (struct mem_info_struct *)(0x98000+sizeof(struct kernel_param));
+	struct mem_info_struct *ms;
+	ms = (struct mem_info_struct *)(0x98000+sizeof(struct kernel_param));
 	printk("BaseAddrL BaseAddrH LengthLow LengthHigh    Type\n");
 	uint32 total_memory = 0;
 	for ( int i = 0; i < kparam->mem_cnt; i++ )
     {
+    	#if 0
         printk("%08x  %08x  %08x  %08x  %08x\n",
-               mp->address_low,
-               mp->address_high,
-               mp->length_low,
-               mp->length_high,
-               mp->type);
-        if ( mp->type == 1)
+               ms->address_low,
+               ms->address_high,
+               ms->length_low,
+               ms->length_high,
+               ms->type);
+		#endif
+        if ( ms->type == 1)
         {
-            total_memory += mp->length_low;
+            total_memory += ms->length_low;
         }
-        mp++;
+        ms++;
     }
     printk("RAM size %08x(%dKB)\n", total_memory, total_memory/1024);
 	printk("%s\n",version);
@@ -236,6 +242,11 @@ int main( int argc, char *argv[] )
 	tty_init();
 	sched_init();
     sti();
+#if 0
+	uint32 start = task[0]->mm.stack_start+USER_STACK_SIZE;
+	__asm__ __volatile__("mov %0, %%eax\n\t"\
+						 "mov %%eax, %%esp\n\t"::"c"(start));
+#endif
 	move_to_user_mode();
 	if ( !fork() )
 	{
@@ -243,217 +254,131 @@ int main( int argc, char *argv[] )
 	}
 	for (;;) 
 	{
-		idle_cnt++;
 		idle();
 	}
+
 }
 
 void task_1(void);
 
+void _exit(void){}
 
 void init(void)
 {
-    int pid, i = 0;
-	int last_count = 0;
+	int i = 0, last_count = 0;
 
 	(void)open("/dev/tty1",O_RDWR, 0);
 	(void)dup(0);
 	(void)dup(0);
 
-	printf("test printf syscall\n");
+	printf("task_init test printf syscall stack=%08x\n", (uint32)&i);
+
+#if 0
+
+    int pid;
 
 	if (!(pid=fork()))
 	{
-		task_1();
-	}
-
-	for(;;)
+		execve("/bin/sh");
+		_exit();
+	} else	
+#endif
 	{
-		i++;
-
-		if ( last_count != timer_c )
+		for(;;)
 		{
-			last_count = timer_c;
-			printf("pid=%d i=%08x,ticks: %08d utime=%8d ktime=%8d idle_cnt=%08d\n",
-					current->pid,
-					i,
-					timer_c,
-					get_utime(),
-					get_ktime(),
-					idle_cnt);
-			lseek(0,0,SEEK_SET);
-		}
+			i++;
 
-		// for ( int k = 0; k < 10000000; k++ );
-		sleep(1000);
+			if ( last_count != timer_c )
+			{
+				last_count = timer_c;
+				#if 1
+				lseek(0,0,SEEK_SET);
+				printf("pid=%d i=%08x,ticks: %08d utime=%8d ktime=%8d idle_cnt=%08d, st:%08x\n",
+						getpid(),
+						i,
+						timer_c,
+						get_utime(),
+						get_ktime(),
+						idle_cnt,
+						(uint32)&i);
+				#endif
+			}
+			sleep(1000);
+
+		}
 	}
 }
 
-void task_2(void);
-
-
-void new_task_entry(void)
-{
-	printf("new task_entry,pid=%d\n", current->pid);
-
-	task_2();
-}
-
+#define DRAW_LOGO         0
 
 void task_1(void)
-{
+ {
 	int i = 0;
-	int x = 0,y = 420+32;
+#if (DRAW_LOGO==1)
+	int x = 0,y = 420+32+300;
+#endif
 	int last_count = 0;
 
+
+	(void)open("/dev/tty1",O_RDWR, 0);
+	(void)dup(0);
+	(void)dup(0);
+
+	printf("task_1 test printf syscall stack=%08x\n", (uint32)&i);
+
+#if 1
 	int pid;
 
 	if (!(pid=fork()))
 	{
-		// task_2();
 		execve("/bin/sh");
-		while(1);
-	}
+	}else {
+#endif
 
-	for (;;)
-	{
-		i++;
-		if ( last_count != timer_c )
+		for (;;)
 		{
-			last_count = timer_c;
-			draw_text(0,360+16,"pid=%d i=%08x,ticks: %08d utime=%8d ktime=%8d",
-					current->pid,
-					i,
-					timer_c,
-					get_utime(),
-					get_ktime()
-			 );
+			i++;
+			// if ( last_count != timer_c )
+			{
+				last_count = timer_c;
+
+				#if 1
+				lseek(0,1920*16,SEEK_SET);
+				printf("pid=%d i=%08x,ticks: %08d utime=%8d ktime=%8d idle_cnt=%08d,st:%08x\n",
+						current->pid,
+						i,
+						timer_c,
+						get_utime(),
+						get_ktime(),
+						idle_cnt,
+						(uint32)&i);
+				#endif
+				
+				#if 0
+				draw_text(0,360+32,"pid=%d i=%08x,ticks: %08d utime=%8d ktime=%8d",
+						current->pid,
+						i,
+						timer_c,
+						get_utime(),
+						get_ktime()
+				 );
+				#endif
+			}
+#if (DRAW_LOGO==1)
+
+			 if( x > 0 )
+	 			draw_v_line(x-1,y,  1,144,0x80<<8);
+	 		 draw_bitmap(x,  y,120,144,(unsigned char*)(0x800000));
+	 		 x++; x %= 1920;
+			 for ( int k =0; k < 100000; k++);;
+#endif			 
+			 sleep(2000);
+
 		}
-		 if( x > 0 )
-		 #if 0
-		 draw_v_line(x-1,y,1,96,0x80<<8);
-		 draw_bitmap(x,y,79,96,gImage_girl);
-		 #else
-	//	 draw_v_line(x-1,y,  1,144,0x80<<8);
-	//	 draw_bitmap(x,  y,120,144,(unsigned char*)(0x800000));
-		 #endif
-		 x++; x %= 1920;
-		 sleep(2000);
-#if 0
-		float color_tmp = 0;
-
-		float step = 256.0/360.0;
-        for ( int y = 0; y < 360; y++ )
-        {
-            unsigned int *p;
-            p = (unsigned int *)(0x200000) + 1920*y;
-            int tc = (int)(((int)color_tmp) << ((i % 3)*8));
-
-            for ( int x = 0; x < 1920; x++ )
-            {
-                *p++ = tc;
-            }
-            color_tmp += step;
-        }
-
-		memcpy( (unsigned int *)(kparam->vaddr) + 1920*720, (unsigned char *)(0x200000), 360 * 1920 * 4);
-#endif // 0
 	}
 }
 
-void task_3(void);
 
-void task_2(void)
-{
-	int i = 0;
-	int last_count = 0;
 
-	int pid;
 
-	if (!(pid=fork()))
-	{
-		task_3();
-	}
 
-	for (;;)
-	{
-		i++;
-		if ( last_count != timer_c )
-		{
-			last_count = timer_c;
-			draw_text(0,360+32,"pid=%d i=%08x,ticks: %08d utime=%8d ktime=%8d",
-					current->pid,
-					i,
-					timer_c,
-					get_utime(),
-					get_ktime()
-			 );
-		}
-
-		//for ( int k = 0; k < 100000; k++ );
-		sleep(3000);
-	}
-}
-
-void task_4(void);
-
-void task_3(void)
-{
-	int i = 0, j = 0;
-	int last_count = 0;
-
-	int pid;
-
-	if (!(pid=fork()))
-	{
-		task_4();
-	}	
-	
-	for (;;)
-	{
-		i++;
-		if ( last_count != timer_c )
-		{
-			last_count = timer_c;
-			j++;
-			draw_text(0,360+48,"pid=%d i=%08x,j=%08d, ticks: %08d utime=%8d ktime=%8d",
-					current->pid,
-					i,
-					j,
-					timer_c,
-					get_utime(),
-					get_ktime()
-			 );
-		}
-
-		//for ( int k = 0; k < 5000000; k++ );
-		
-		sleep(4000);
-	}
-}
-
-void task_4(void)
-{
-	int i = 0, j = 0;
-	int last_count = 0;
-
-	for (;;)
-	{
-		i++;
-		if ( last_count != timer_c )
-		{
-			last_count = timer_c;
-			j++;
-			draw_text(0,360+64,"pid=%d i=%08x,j=%08d, ticks: %08d utime=%8d ktime=%8d",
-					current->pid,
-					i,
-					j,
-					timer_c,
-					get_utime(),
-					get_ktime()
-			 );
-		}
-		
-		sleep(5000);
-	}
-}

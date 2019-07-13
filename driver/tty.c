@@ -2,6 +2,7 @@
 #include <tty.h>
 #include <libc.h>
 #include <chrdev.h>
+#include <sched.h>
 #include <printk.h>
 #include <putc.h>
 
@@ -22,24 +23,10 @@ struct file_operations tty_file_operation =
 
 int tty_open( struct file *filp )
 {		
-	printk("tty_open\n");
+	printk("task[%d] tty_open\n", current->pid);
 	filp->w_o = 1920 * (1080/3);	
 	
 	return 0;
-}
-
-void delay( int us )
-{
-	volatile int loop;
-	
-	while ( us-- > 0 )
-	{
-		loop = 100000;
-		while ( loop-- > 0 )
-		{
-			;
-		}
-	}
 }
 
 int tty_write( struct file *filp, const char *__buf, int len )
@@ -47,6 +34,8 @@ int tty_write( struct file *filp, const char *__buf, int len )
     int i = 0;
 
 	int x, y;
+
+	// printk("task[%d] tty_write\n", current->pid);	
 	
 	x = filp->w_o % 1920;
 	y = filp->w_o / 1920;
@@ -68,15 +57,13 @@ int tty_write( struct file *filp, const char *__buf, int len )
 	{
 		filp->w_o = 1920 * (1080/3);
 	}
-
-	// delay(500);
 	
-	return 0;
+	return (i);
 }
 
 int tty_read( struct file *filp, char *__buf, int len )
 {
-	printk("tty_read\n");
+	printk("task[%d] tty_read\n", current->pid);
 	return 0;
 }
 

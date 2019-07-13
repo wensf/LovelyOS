@@ -120,6 +120,17 @@ MessageErr:
     
 /**
  * Hard disk partition table
+ * 0x80: OS Active Flag
+ * 0x20: start header
+ * 0x21: start sector
+ * 0x00: start cylinder
+ * 0x04: FAT16
+ * 0X25: end header
+ * 0x24: end sector
+ * 0x01: end cylinder
+ * 0x00080000(0x00000800) offset sector of partition -> partiton start at sector 2048
+ * 0x00400000(0x00004000) all sectors -> 16384 sectors this partition.
+ * Note : we have 8MB fat16 parition now.
  */    
 	.org  446
 	.byte 0x80
@@ -136,8 +147,6 @@ MessageErr:
 	.byte 0x00
 	.byte 0x00
 	.byte 0x40
-	.byte 0x00
-	.byte 0x00
 	.byte 0x00
 	.byte 0x00
 	

@@ -2,20 +2,26 @@
 #include <mm/page.h>
 #include <init.h>
 #include <memory.h>
-
-#define P_P   1<<0
-#define P_RW  1<<1
-#define P_US  1<<2
+#include <page.h>
 
 extern struct kernel_param *kparam;
+
+
+extern unsigned long vaddr;
+/**
+ * 页表初始化.
+ * 将8MB的显存空间映射到其对应的物理地址上.
+ * 显存地址一般是动态的,在boot阶段用BIOS调用获得并保存在
+ * kparam->vaddr变量中.
+ */
 
 void page_init(void)
 {
 	/**
-	 * mapping the Vedio RAM from it's phyaddr to vaddress
+	 * mapping the Vedio RAM addr, size = 8MB.
 	 */
 	
-	page_map( kparam->vaddr, kparam->vaddr, 0x800000, P_P|P_RW|P_US);
+	page_map( kparam->vaddr, vaddr, 0x800000, P_P|P_RW|P_US);
 }
 
 int page_map( uint32 pa, uint32 va, int size, int attr )

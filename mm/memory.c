@@ -49,7 +49,6 @@ unsigned long get_free_page(void)
         if ( !mem_map[i] )
         {
             mem_map[i]++;
-
             return MEM_LOW + (i* 4096);
         }
     }

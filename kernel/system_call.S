@@ -23,7 +23,6 @@
 .global _syscall_sleep
 .global ret_from_fork
 .global do_fork
-.global find_empty_process
 .global schedule
 .global syscall_open  	/* int _syscall_open( const char *file_name, int mode, int flag ); */
 .global _syscall_open
@@ -45,6 +44,12 @@
 .global syscall_get_ktime
 .global _syscall_execve
 .global syscall_execve		/* int syscall_execve(const char *file_name); */
+.global _syscall_get_pid
+.global syscall_get_pid		/* int syscall_get_pid(void); */
+.global _syscall_mmap		
+.global sys_mmap			/* unsigned int _syscall_mmap(unsigned long start, unsigned long length, unsigned long flags); */
+.global _syscall_idle
+.global syscall_idle		/* void syscall_idle(void);  */
 .global nr_sys_calls
 
 .align 4
@@ -76,8 +81,9 @@ system_call:
 	movl  $0x10, %edx		/* Ring0 Code Segment */
 	mov   %dx, %ds
 	mov   %dx, %es
-	mov   %dx, %fs
 	mov   %dx, %gs
+	movl  $0x23, %edx		/* FS set to 0x23 for access user space */
+	mov   %dx, %fs
 	popl  %edx
 
 	call  *sys_call_table(,%eax,4)
@@ -113,13 +119,9 @@ ret_from_fork:
 
 .align 4
 _syscall_fork:
-	call find_empty_process
-	test %eax, %eax
-	js 1f
 	pushl %esp
-	pushl %eax
 	call do_fork
-	addl $8, %esp
+	addl $4, %esp
 1:  ret
 
 .align 4
@@ -143,7 +145,9 @@ _syscall_open:
 	pushl %ebx
     call syscall_open
     addl  $12, %esp
-	call schedule
+    //pushl %eax  // save the result    
+	//call schedule
+	//popl %eax	
     ret
 
 .align 4
@@ -163,7 +167,9 @@ _syscall_write:
 	pushl %ebx
     call syscall_write
     addl  $12, %esp
-	call schedule
+ //   pushl %eax  // save the result
+//	call schedule
+//	popl %eax
     ret
 
 .align 4
@@ -196,6 +202,7 @@ _syscall_lseek:
 .align 4
 _syscall_idle:
     hlt
+    call syscall_idle
 	call schedule
     ret
 
@@ -211,14 +218,81 @@ _syscall_get_ktime:
 
 
     EIP = 56	/* EIP save at kernel stack in offset 56 */
+    ESP = 72	/* ESP save at kernel stack in offset 72 */    
 .align 4
 _syscall_execve:
 	pushl %ebx 	/* EBX point to the param file_name */
 	lea EIP(%esp),%eax
 	pushl %eax  /* EIP push as param for call syscall_execve */
+	lea ESP(%esp),%eax
+	pushl %eax  /* ESP push as param for call syscall_execve */
 	call syscall_execve
-	addl $8,%esp
+	addl $12,%esp
 	ret
+
+.align 4
+_syscall_get_pid:
+    call syscall_get_pid
+    ret	
+
+
+.align 4
+_syscall_mmap:
+    pushl %edx
+	pushl %ecx
+	pushl %ebx
+    call syscall_mmap
+    addl  $12, %esp
+    ret
+    
+
+.global _parallel_interrupt
+.global parallel_interrupt
+.align  4
+_parallel_interrupt:
+	pushl $0
+	push %ds
+	push %es
+	push %gs
+	push %fs
+	pushl %ebp
+	pushl %edi
+	pushl %esi
+	pushl %edx
+	pushl %ecx
+	pushl %ebx
+	pushl %eax
+
+    pushl %esp
+
+	movb $0x20, %al
+	outb %al, $0x20
+
+    movl  44(%esp), %eax
+    andl  $3, %eax            # cpl
+    pushl %eax
+    movl $0x10,%edx
+    mov   %dx,%ds
+    mov   %dx,%es
+    mov   %dx,%fs
+    mov   %dx,%gs
+
+	call parallel_interrupt
+    addl  $8,%esp
+
+    popl  %eax
+    popl  %ebx
+    popl  %ecx
+    popl  %edx
+    popl  %esi
+    popl  %edi
+    popl  %ebp
+    pop   %fs
+    pop   %gs
+    pop   %es
+    pop   %ds
+    addl  $4, %esp
+    iret
 
 .global timer_int
 .global timer_interrupt
@@ -412,4 +486,97 @@ _int3_trap:
     pop   %ds
     addl  $4, %esp
     iret
+
+.global _operation_fault
+.global operation_fault
+
+.align 4
+_operation_fault:
+	pushl $0                       /** No Error Code */
+	push %ds
+	push %es
+	push %gs
+	push %fs
+	pushl %ebp
+	pushl %edi
+	pushl %esi
+	pushl %edx
+	pushl %ecx
+	pushl %ebx
+	pushl %eax
+
+    pushl %esp
+
+    movl  44(%esp), %eax                #
+    andl  $3, %eax                      # cpl
+    pushl %eax
+    movl $0x10,%edx
+    mov   %dx,%ds
+    mov   %dx,%es
+    mov   %dx,%fs
+    mov   %dx,%gs
+
+	call operation_fault
+    addl  $8,%esp
+
+    popl  %eax
+    popl  %ebx
+    popl  %ecx
+    popl  %edx
+    popl  %esi
+    popl  %edi
+    popl  %ebp
+    pop   %fs
+    pop   %gs
+    pop   %es
+    pop   %ds
+    addl  $4, %esp
+    iret    
+
+
+.global _page_fault
+.global page_fault
+
+.align 4
+_page_fault:
+	// pushl $0                       /** Error Code push by CPU */
+	push %ds
+	push %es
+	push %gs
+	push %fs
+	pushl %ebp
+	pushl %edi
+	pushl %esi
+	pushl %edx
+	pushl %ecx
+	pushl %ebx
+	pushl %eax
+
+    pushl %esp
+
+    movl  44(%esp), %eax                #
+    andl  $3, %eax                      # cpl
+    pushl %eax
+    movl $0x10,%edx
+    mov   %dx,%ds
+    mov   %dx,%es
+    mov   %dx,%fs
+    mov   %dx,%gs
+
+	call page_fault
+    addl  $8,%esp
+
+    popl  %eax
+    popl  %ebx
+    popl  %ecx
+    popl  %edx
+    popl  %esi
+    popl  %edi
+    popl  %ebp
+    pop   %fs
+    pop   %gs
+    pop   %es
+    pop   %ds
+    addl  $4, %esp
+    iret     
 

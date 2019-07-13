@@ -3,7 +3,7 @@
 
 void setpixel( int x, int y, int color)
 {
-	if ( x > 1919 || y > 1279 )
+	if ( x > 1919 || y > 1079 )
 	{
 		return;
 	}

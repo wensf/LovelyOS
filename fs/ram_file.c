@@ -70,7 +70,6 @@ int ramfile_create_file ( int32 father_fid, uint32 ctime, const int8 *name, stru
 	ram_files[fid].f_pos[1] = 0;
 	strcpy((char*)ram_files[fid].f_name, (char*)name);
 	ram_files[fid].f_type = F_TYPE_FILE;
-	ram_files[fid].f_ops = 0;
 	ram_files[fid].f_ops = f_ops;
 	ram_files[fid].f_count = 0;
 	ram_files[fid].f_lock = RAM_FILE_UNLOCK;
@@ -82,8 +81,8 @@ int32 ramfile_fid_find ( const int8 *path_name )
 {
 	for ( int i = 0; i < last_fid; i++ )
 	{
-		if ( !strcmp( (char *)ram_files[i].f_name, (char *)path_name) )
-		{
+		if ( !strncmp( (char *)ram_files[i].f_name, (char *)path_name,MAX_NAME) )
+ 		{
 			return ram_files[i].f_id;
 		}
 	}
