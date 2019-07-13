@@ -26,6 +26,7 @@ struct kernel_param
 	int yres;
 	int bpp;
 	int vaddr;
+	int vesa_mode;
 	int mem_cnt;
 };
 
@@ -39,11 +40,11 @@ struct vga_mode_struct
 
 struct vga_mode_struct svga_mode[256] =
 {
-	/* {0x100, 0},
+	{0x100, 0},
    	{0x101, 0},
   	{0x102, 0},
   	{0x103, 0},
-  	{0x104, 0}, */
+  	{0x104, 0},
   	{0x105, 0},
   	{0x106, 0},
   	{0x107, 0},
@@ -67,7 +68,17 @@ struct vga_mode_struct svga_mode[256] =
 #define YRES   1080
 #define BPP       32
 
-int ax = 0, ay = 0, bit_pixel = 0, vesa_mode = 0, video_addr;
+struct vga_mode
+{
+	int xre, yre, bits;
+	int mode;
+};
+
+const struct vga_mode kernel_supported_mode[2] = 
+{
+	{XRES,YRES,BPP,0},
+	{1024,768,BPP,0},
+};
 
 int get_key ( int timeout )
 {
@@ -98,7 +109,7 @@ void clear_screen(void)
 	::);
 }
 
-struct kernel_param *kp;
+struct kernel_param *kparam;
 
 int init_vesa( int xres, int yres, int bpp )
 {
@@ -110,7 +121,6 @@ int init_vesa( int xres, int yres, int bpp )
     /**
      * INT 10H AX=4F00H Get the VBE controller Infomation.
      */
-
     int _result;
     __asm__ __volatile__ (
     	"mov $0x0, %%di\n\t"
@@ -143,7 +153,7 @@ int init_vesa( int xres, int yres, int bpp )
 
 	printf("vesa attr xres yres color vram\n");
 
-    for ( int i = 0; i < /*sizeof(svga_mode)/sizeof(svga_mode[0])*/256; i++ )
+    for ( int i = 0; i < /*SIZE_NR(svga_mode)*/256; i++ )
     {
     	int _result = 0;
     	unsigned char *p = (unsigned char *)0;
@@ -175,18 +185,19 @@ int init_vesa( int xres, int yres, int bpp )
     					 *((unsigned short *)(p+18)), 	/* xresolution */
     					 *((unsigned short *)(p+20)),	/* yresolution */
     					 *((unsigned char *)(p+0x19)),	/* bits_per_pixel */
-    					 *((unsigned int *)(p+40))     /**/
+    					 *((unsigned int *)(p+40))     	/* vide addr */
     					 );
 
     	if ( (*((unsigned short *)(p+18)) == xres)
     		&& (*((unsigned short *)(p+20)) == yres)
     		&&  (*((unsigned char *)(p+0x19)) == bpp) )
         {
-            ax = *((unsigned short *)(p+18));
-            ay = *((unsigned short *)(p+20));
-            bit_pixel = *((unsigned char *)(p+0x19));
-            vesa_mode = svga_mode[i].mode;
-			video_addr = *((unsigned int *)(p+40));
+            kparam->xres = *((unsigned short *)(p+18));
+            kparam->yres = *((unsigned short *)(p+20));
+            kparam->bpp = *((unsigned char *)(p+0x19));
+            kparam->vesa_mode = svga_mode[i].mode;
+			kparam->vaddr = *((unsigned int *)(p+40));
+			return (0);
         }
 
 		if ( y > 24 )
@@ -198,37 +209,10 @@ int init_vesa( int xres, int yres, int bpp )
 		}
     }
 
-    if ( (ax != xres) || (ay != yres) || (bit_pixel != bpp ) )
-    {
-        printf("Not supported %d * %d %d\n",xres,yres,bpp);
-        get_key(0);
-        return (-1);
-    }else{
-        printf("supported x=%d,y=%d, bit_per_pixel=%d video_addr=%08x\n",ax,ay,bit_pixel,video_addr);
-    }
-	kp->xres  = xres;
-	kp->yres  = yres;
-	kp->bpp   = bpp;
-	kp->vaddr = video_addr;
 
-	printf("Press any key to boot kernel");
-	get_key(0);
-	clear_screen();
-
-	// set vesa mode.
-	int mode = vesa_mode;
-	__asm__ __volatile__(
-	                 "mov $0x4f02, %%ax\n\t"
-                     "mov %1,%%bx\n\t"
-                     "addw $0x4000,%%bx\n\t"
-                     "int $0x10\n\t"
-                     :"=a"(_result)
-                     :"m"(mode)
-                     :"bx");
-
-	return 0;
-
+	return (-1);
 }
+
 
 #define FLAG_CF 0x00000001
 
@@ -263,6 +247,25 @@ int memory_range_probe( int idx, unsigned char *buf )
 
 struct mem_info_struct mem_info, *mem_p;
 
+#define SIZEOF_NR(x) (sizeof(x)/sizeof(x[0]))
+
+int set_video(void)
+{
+	// set vesa mode.
+	
+	int _result;
+	int mode = kparam->vesa_mode;
+	__asm__ __volatile__(
+					 "mov $0x4f02, %%ax\n\t"
+					 "mov %1,%%bx\n\t"
+					 "addw $0x4000,%%bx\n\t"
+					 "int $0x10\n\t"
+					 :"=a"(_result)
+					 :"m"(mode)
+					 :"bx");
+	return _result;
+}
+
 int main(void)
 {
     int r;
@@ -271,28 +274,63 @@ int main(void)
     printf("console_init() completed.\n");
 	
     mem_p = (struct mem_info_struct *)( 0x8000 + sizeof(struct kernel_param) );
-	kp = (struct kernel_param *)(0x8000);
-	kp->mem_cnt = 0;
+	kparam = (struct kernel_param *)(0x8000);
+	kparam->mem_cnt = 0;
 	do{
-
 		r = memory_range_probe(r,(unsigned char *)&mem_info);
 		memcpy(mem_p, &mem_info, sizeof(struct mem_info_struct));
-		mem_p++; kp->mem_cnt++;
+		mem_p++; kparam->mem_cnt++;
 	}while( r != 0 );
-	printf("%d block memory found in tatal\n", kp->mem_cnt);
+	printf("%d block memory found in tatal\n", kparam->mem_cnt);
 
 	printf("Press any key to init the evsa\n");
 	#if 1
 	get_key(0);
 	#endif
 	
-	#if 1
-	r = init_vesa( XRES, YRES, BPP );
-	if ( r == -1 )
+	int i = 0;
+	for ( ; i < SIZEOF_NR(kernel_supported_mode); i++ )
 	{
-        get_key(0);
+		int xre = kernel_supported_mode[i].xre;
+		int yre = kernel_supported_mode[i].yre;
+		int bpp = kernel_supported_mode[i].bits;
+		
+		if (init_vesa( xre, yre, bpp ) == 0){
+			break;
+		}
 	}
-	#endif
 	
-	return 0;
+	if ( i < SIZEOF_NR(kernel_supported_mode) )
+ 	{
+		printf("supported x=%d,y=%d, bit_per_pixel=%d mode=%04x video_addr=%08x\n",
+			kparam->xres,kparam->yres,kparam->bpp,kparam->vesa_mode,kparam->vaddr);
+		printf("Press any key to boot kernel");
+		get_key(0);
+		clear_screen();
+		
+		return 0;	
+	}
+
+	
+	printf("The flow VGA mode Not supported by kernel\n");
+
+	for ( int i = 0; i < SIZEOF_NR(kernel_supported_mode); i++ )
+	{
+		int xres = kernel_supported_mode[i].xre;
+		int yres = kernel_supported_mode[i].yre;
+		int bpp = kernel_supported_mode[i].bits; 		
+		printf("%d * %d %d\n",xres,yres,bpp);
+	}
+
+	get_key(0);
+		
+	return (-1);
+	
 }
+
+
+
+
+
+
+

@@ -254,6 +254,10 @@ _start:
 	movw	$0xB800, %ax
 	movw	%ax, %gs
 
+	/* set video to graphics mode */
+
+	call	set_video
+
 	jmp     _Entry_protected_mode
 
 	/* .size _start, . - _start */
@@ -413,8 +417,8 @@ loop:
 
 _equal:
 	pushl	$'E'
-	pushl	$11
-	pushl	$0
+	pushl	$1920/2
+	pushl	$1080/2
 	call	_putc
 	add		$12, %esp
 
@@ -422,7 +426,6 @@ _equal:
 	 * Ok, we will entry 32-bit protected mode
 	 * so, say good bye to real-mode
 	 */
-
 	jmpl	$0x08, $0x00108000
 
 _not_equal:
@@ -435,7 +438,11 @@ _not_equal:
 
 	ret
 
-.global _putc
+/* 
+ * we has set the video to graphics mode, so the _putc don't work,
+ * just keep it as it is.
+ */
+.global _putc	
 _putc:
 	push %ebp
 	mov  %esp, %ebp
@@ -449,7 +456,7 @@ _putc:
 	add  8(%ebp), %eax   /* parmater x */
 	mov  $0x2, %ebx
 	mul  %ebx
-	add  $0xB8000, %eax
+	add  $0xe0000000, %eax
 	mov  %eax, %ebx
 	xor  %eax, %eax
 	mov  16(%ebp), %eax  /* parmater c */

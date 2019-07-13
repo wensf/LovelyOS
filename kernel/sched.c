@@ -91,8 +91,7 @@ void sched_init(void)
 	task[0]->delay    = 0;
 	task[0]->u_time   = 0;
 	task[0]->k_time   = 0;
-	task[0]->prev     = 0x0;
-	task[0]->next     = 0x0;
+	task[0]->last_fd  = 0;
 	task[0]->thread.ss0  = SELECTOR_KERNEL_DATA;
 	task[0]->thread.esp0 = struct_tcb + KERNEL_STACK_PAGES*PAGE_SIZE;
 	task[0]->thread.ss   = SELECTOR_USER_DATA;
@@ -197,7 +196,7 @@ void schedule(void)
 
 	do{
 		i++; i %= 4;
-	}while(!task[i]);
+	}while(!task[i] || task[i]->state != TASK_RUNNING);
 #endif
 
 #if 1

@@ -1,0 +1,7 @@
+---- page_map Matches (6 in 0 files) ----
+page.c (D:\LovelyOS\mm) line 15 : int do_page_map ( uint32 pgd, uint32 pa, uint32 va, int attr );
+page.c (D:\LovelyOS\mm) line 37 : int do_page_map ( uint32 pgd, uint32 pa, uint32 va, int attr )
+page.c (D:\LovelyOS\mm) line 63 : int page_map( uint32 pgd, uint32 pa, uint32 va, int size, int attr )
+page_map in page.c (D:\LovelyOS\mm) : 		do_page_map( pgd, pa+i*4096, va+i*4096, attr );
+do_page_fault in page.c (D:\LovelyOS\mm) : 	do_page_map( current->pgd, pa, va, P_P|P_RW|P_US );
+page_init in page.c (D:\LovelyOS\mm) : 	page_map( KERNEL_PAGE_DIR_ADDR, kparam->vaddr, vaddr, 0x800000, P_P|P_RW|P_US);

@@ -41,27 +41,48 @@ void kernel_panic ( int cpl, unsigned long esp )
 		printk("esp=%08x\n", *p++); 
 		printk("ss=%08x\n", *p++); 
 	}
+
+	while(1){
+		__asm__ __volatile__ ("hlt");
+	}
+	
 }
+
+void kernel_die(const char*fmt,...)
+{
+	char buf[256];
+	va_list ap;
+	
+	va_start(ap, fmt);
+	vsnprintf(buf, sizeof(buf), fmt, ap);
+	va_end(ap);
+
+	printk("OSLover_Die: ");
+	printk(buf);
+
+	while(1){
+		__asm__ __volatile__ ("hlt");
+	}	
+}
+
+
 
 void divide_error(int cpl, unsigned long esp )
 {
 	printk("divide_error\n");
-	kernel_panic(cpl, esp);
-	while(1);
+ 	kernel_panic(cpl, esp);
 }
 
 void int3_trap(int cpl, unsigned long esp )
 {
 	printk("int3_trap\n");
 	kernel_panic(cpl, esp);
-	while(1);
 }
 
 void operation_fault(int cpl, unsigned long esp )
 {
 	printk("operation_fault\n");
 	kernel_panic(cpl, esp);
-	while(1);
 }
 
 
@@ -69,33 +90,25 @@ void double_fault(int cpl, unsigned long esp )
 {
 	printk("double_fault\n");
 	kernel_panic(cpl, esp);
-	while(1);
 }
 
 void generic_protected_fault( int cpl, unsigned long esp )
 {
 	printk("generic_protected_fault\n");
 	kernel_panic(cpl, esp);
-	while(1);
 }
 
 extern void do_page_fault(void);
 
 void page_fault(int cpl, unsigned long esp )
 { 
-	#if 0
-	kernel_panic(cpl, esp);
-	while(1);
-	#else
 	do_page_fault();
-	#endif
 }
 
 void parallel_interrupt(int cpl, unsigned long esp)
 {
-	//printk("parallel_interrupt\n");
-	//kernel_panic(cpl, esp);
-	// while(1);
+	printk("parallel_interrupt\n");
+	kernel_panic(cpl, esp);
 }
 
 

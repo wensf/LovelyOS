@@ -13,6 +13,7 @@
 .global _idt
 .global _gdt
 .global _putc
+
 /**
  * The Kernel entry point, linked at 0x00008000 in the future.
  */
@@ -41,8 +42,15 @@ _flush:
 	mov		%ax, %fs
 	mov		%ax, %gs
 
-clear_bss:
-
+_clear_bss:
+	xorl %eax,%eax
+	movl $__bss_start,%edi
+	movl $__bss_end,%ecx
+	subl %edi,%ecx
+	cld
+	rep
+	stosb
+	
     call    setup_paging
 
 	jmpl	$0x08, $main

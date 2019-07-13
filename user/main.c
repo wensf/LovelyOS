@@ -136,12 +136,10 @@ int main(void)
 {
  	int i = 0;
 	
-	open("/dev/tty1",O_RDWR,4);
 	lseek(0,1920*48,SEEK_SET);
-
 	printf("Task sh is running\n");
-	lseek(0,1920*64,SEEK_SET);
 	
+	lseek(0,1920*64,SEEK_SET);
 	p_vram = (unsigned int*)mmap(0,1920*1080*4,0);
 	if ( p_vram ){
  		printf("mmap done p_vram=%08x\n", p_vram);
@@ -155,14 +153,14 @@ int main(void)
 	
 	while(1)
 	{
-		lseek(0,1920*32,SEEK_SET);
+		lseek(0,1920*80,SEEK_SET);
 		printf("Hello Loverly OS stack at %08x,i=%08d\n",(unsigned int)&i, i++);
 
-		if ( !(i % 3) ){
-			sleep(10000);
-		}
+		//if ( !(i % 3) ){
+			sleep(2500);
+		//}
 
-		// draw_line(x,y,100,4,color);
+		draw_line(x,y,100,4,color);
 
 		y += 8;
 		y %= 1080;

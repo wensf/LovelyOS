@@ -1,6 +1,7 @@
 #include <fs/ramfs.h>
 #include <fs/vfs.h>
 #include <fs/ram_file.h>
+#include <traps.h>
 #include <types.h>
 #include <sched.h>
 #include <printk.h>
@@ -118,7 +119,8 @@ int ramfs_open( const char *path, int mode, int flags )
 	f_id = ramfile_fid_find((const int8*)path);
 	if ( (f_id < 0) && !(mode & O_CREAT) )
 	{	
-		printk("not found at %08x -> %s\n", (uint32)path,path);
+		
+		kernel_die("not found at %08x -> %s\n", (uint32)path,path);
 		return (-1);
 	}else{
 		printk("fid =%d\n", f_id);
@@ -141,7 +143,7 @@ int ramfs_open( const char *path, int mode, int flags )
 	filp = file_alloc();
 	if ( !filp )
 	{
-		printk("file_alloc failed\n");
+		kernel_die("file_alloc failed\n");
 		return (-1);
 	}
 	
@@ -153,7 +155,7 @@ int ramfs_open( const char *path, int mode, int flags )
 	if ( last_unused == -1 )
 	{
 		file_free(filp);
-		printk("last_unused failed\n");
+		kernel_die("last_unused failed\n");
 		return (-1);
 	}
 	printk("ramfs_open fd=%d\n",last_unused);
@@ -208,9 +210,7 @@ int ramfs_write( int fd, const char *__buf, int len )
 	int i = 0;
 
 	if ( fd > MAX_RAM_FILE-1 ){
-		printk("%s:%d error: fd=%d\n",__FILE__,__LINE__,fd);
-		while(1);
-		// return (-1);
+		kernel_die("task[%d], ramfs_write %[%d] %s:%d error: fd=%d\n",current->pid, fd, __FILE__,__LINE__);
 	}
 	
 	filp = current->file[fd];
@@ -219,7 +219,7 @@ int ramfs_write( int fd, const char *__buf, int len )
 	{
 		i = filp->f_ops->f_write( filp, __buf, len );
 	}else{
-		printk("ramfs_write [%d] null point\n",fd);
+		kernel_die("task[%d], ramfs_write [%d] null point\n",current->pid,fd);
 	}
 	
 	return (i);
@@ -236,6 +236,8 @@ int ramfs_close( int fd )
 	{
 		i = filp->f_ops->f_close( filp );
 	}
+
+	file_free(filp);
 	
 	return (i);
 }

@@ -1,13 +1,14 @@
 #include <font.h>
 #include <putc.h>
+#include <init.h>
 
 void setpixel( int x, int y, int color)
 {
-	if ( x > 1919 || y > 1079 )
+	if ( x > (kparam->xres-1) || y > (kparam->yres-1) )
 	{
 		return;
 	}
-	*((unsigned int *)(vaddr) + (1920*y + x)) = color;
+	*((unsigned int *)(vaddr) + (kparam->xres*y + x)) = color;
 }
 
 void putchar( int x, int y, char ch, int color, int b_color)
@@ -32,3 +33,7 @@ void putchar( int x, int y, char ch, int color, int b_color)
 		}
 	}
 }
+
+
+
+

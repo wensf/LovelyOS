@@ -71,11 +71,7 @@ int draw_text( int x, int y, const char *fmt,...)
 	return 0;
 }
 
-unsigned long vaddr;
-
 int console_init(void)
 {
-	vaddr = 0x1000000;
-
 	return 0;
 }

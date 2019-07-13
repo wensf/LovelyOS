@@ -6,8 +6,8 @@
 #define COLOR_GREEN               	0X00FF00
 #define COLOR_BLUE                	0X00FF00
 
-#define CCOF		           		0xA0A0A0
-#define CCOB        		   		0x800000
+#define CCOF		           		0x505050
+#define CCOB        		   		0x101010
 
 
 extern int printk(const char *fmt,...);

@@ -8,7 +8,7 @@
 #include <printk.h>
 
 #define MEM_LOW           (2*1024*1024)
-#define PAGING_MEM_SIZE   30*1024*1024
+#define PAGING_MEM_SIZE   8*1024*1024
 #define PAGING_MEM_ITEM   ((PAGING_MEM_SIZE)>>12)
 #define MEM_USED  1
 
@@ -90,7 +90,7 @@ unsigned long get_free_pages( int page_nr )
 			mem_map[i]++;
 		}
 
-		printk("alloc page start %08x, page_nr=%d\n", MEM_LOW + (pidx* 4096), page_nr);
+//		printk("alloc page start %08x, page_nr=%d\n", MEM_LOW + (pidx* 4096), page_nr);
 		return MEM_LOW + (pidx* 4096);
 	}else{
 		return (0);

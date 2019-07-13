@@ -135,14 +135,9 @@ static inline _syscall_0(unsigned int, getpid)
 
 int last_pid;
 
-void global_variable_init(void)
-{
-	last_pid = 0;
-}
-
 extern volatile int timer_c;
 
-const int color[] = {0x80<<16,0x80<<8,0x80<<0};
+const int color[] = {0x101010,0x101010,0x101010};
 
 #include <graphics.h>
 #include <font.h>
@@ -151,31 +146,36 @@ void vesa_test(void)
 {
 	unsigned int *p;
 
-	for ( int y = 0; y < 360; y++ )
-	{
-		p = (unsigned int *)(vaddr) + 1920*y;
+	int xres, yres;
 
-		for ( int i = 0; i < 1920; i++ )
+	xres = kparam->xres;
+	yres = kparam->yres;
+
+	for ( int y = 0; y < (yres/3)*1; y++ )
+	{
+		p = (unsigned int *)(vaddr) + xres*y;
+
+		for ( int i = 0; i < xres; i++ )
 		{
 			*p++ = color[0];
 		}
 	}
 
-	for ( int y = 360; y < 720; y++ )
+	for ( int y = (yres/3)*1; y < (yres/3)*2; y++ )
 	{
-		p = (unsigned int *)(vaddr) + 1920*y;
+		p = (unsigned int *)(vaddr) + xres*y;
 
-		for ( int i = 0; i < 1920; i++ )
+		for ( int i = 0; i < xres; i++ )
 		{
 			*p++ = color[1];
 		}
 	}
 
-	for ( int y = 720; y < 1080; y++ )
+	for ( int y = (yres/3)*2; y < (yres/3)*3; y++ )
 	{
-		p = (unsigned int *)(vaddr) + 1920*y;
+		p = (unsigned int *)(vaddr) + xres*y;
 
-		for ( int i = 0; i < 1920; i++ )
+		for ( int i = 0; i < xres; i++ )
 		{
 			*p++ = color[2];
 		}
@@ -197,19 +197,18 @@ int idle_cnt;
 
 int main( int argc, char *argv[] )
 {
-	global_variable_init();
 	kparam = (struct kernel_param *)(0x98000);
     mem_init(0x200000, 0x800000);
 	console_init();
 	page_init();
-	vesa_test();
-	printk("xres = % 4d, yres=% 4d, bpp=%d, video_addr=%08x\n",
+	vesa_test();		
+	printk("xres = % 4d, yres=% 4d, bpp=%d, mode=%04x, video_addr=%08x\n",
 					kparam->xres,
 					kparam->yres,
 					kparam->bpp,
+					kparam->vesa_mode,
 					kparam->vaddr
 	);
-
 	struct mem_info_struct *ms;
 	ms = (struct mem_info_struct *)(0x98000+sizeof(struct kernel_param));
 	printk("BaseAddrL BaseAddrH LengthLow LengthHigh    Type\n");
@@ -267,13 +266,14 @@ void init(void)
 {
 	int i = 0, last_count = 0;
 
-	(void)open("/dev/tty1",O_RDWR, 0);
+	(void)open("/dev/tty0",O_RDWR, 0);
 	(void)dup(0);
 	(void)dup(0);
 
+	lseek(0,1920*16,SEEK_SET);
 	printf("task_init test printf syscall stack=%08x\n", (uint32)&i);
 
-#if 0
+#if 1
 
     int pid;
 
@@ -292,7 +292,7 @@ void init(void)
 			{
 				last_count = timer_c;
 				#if 1
-				lseek(0,0,SEEK_SET);
+				lseek(0,1920*32,SEEK_SET);
 				printf("pid=%d i=%08x,ticks: %08d utime=%8d ktime=%8d idle_cnt=%08d, st:%08x\n",
 						getpid(),
 						i,
@@ -308,6 +308,28 @@ void init(void)
 		}
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #define DRAW_LOGO         0
 
