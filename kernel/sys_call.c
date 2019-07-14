@@ -19,10 +19,11 @@ extern int _syscall_lseek( int fd, int offset, int whence );
 extern void _syscall_idle( void );
 extern unsigned int _syscall_get_utime( void );
 extern unsigned int _syscall_get_ktime( void );
-extern unsigned int _syscall_execve(const char *file_name);
-extern unsigned int _syscall_get_pid( void );
-extern unsigned int _syscall_mmap(unsigned long start, unsigned long length, unsigned long flags);
-
+extern int _syscall_execve(const char *file_name);
+extern int _syscall_get_pid( void );
+extern int _syscall_mmap(unsigned long start, unsigned long length, unsigned long flags);
+extern int _syscall_exit(int exit_code);
+extern int _syscall_wait( int *exit_code );
 
 typedef void (*fn_ptr)(void);
 
@@ -42,10 +43,12 @@ const fn_ptr sys_call_table[]=
 	(fn_ptr)_syscall_get_ktime,
 	(fn_ptr)_syscall_execve,
 	(fn_ptr)_syscall_get_pid,
-	(fn_ptr)_syscall_mmap
+	(fn_ptr)_syscall_mmap,
+	(fn_ptr)_syscall_exit,
+	(fn_ptr)_syscall_wait,	
 };
 
-const int nr_sys_calls = sizeof(sys_call_table)/sizeof(sys_call_table[0]);
+const int nr_sys_calls = SIZEOF_NR(sys_call_table);
 
 extern int timer_c;
 extern int idle_cnt;

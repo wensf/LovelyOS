@@ -13,6 +13,8 @@
 #define TASK_RUNNING        1
 #define TASK_INTERRUPTABLE  2
 #define TASK_SLEEP          3
+#define TASK_STOP			4
+#define TASK_WAIT           5
 
 #define PAGE_SIZE           4096
 #define KERNEL_STACK_SIZE   PAGE_SIZE*2
@@ -79,6 +81,8 @@ struct task_struct
 	struct thread_struct thread;
 	struct file *file[FSAL_MAX_OPENED_FILE];
 	int file_counter[FSAL_MAX_OPENED_FILE];
+	unsigned long signal;
+	int exit_code;
 	unsigned int pgd;
 	struct mm_struct mm;
 	int last_fd;
@@ -113,8 +117,10 @@ struct regs
 
 extern struct task_struct *current;
 
-extern struct task_struct* task[];
+extern struct task_struct* task[TASK_NR];
 extern void sched_init(void);
+extern void schedule(void);
+extern void task_dump(struct task_struct *task);
 
 #define SCHED_DEBUG_ENABLE        	0
 

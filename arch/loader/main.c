@@ -203,7 +203,7 @@ int init_vesa( int xres, int yres, int bpp )
 		if ( y > 24 )
 		{
 			x = 0; y = 0;
-			get_key(0);
+//			get_key(0);
 
 			clear_screen();
 		}
@@ -284,7 +284,7 @@ int main(void)
 	printf("%d block memory found in tatal\n", kparam->mem_cnt);
 
 	printf("Press any key to init the evsa\n");
-	#if 1
+	#if 0
 	get_key(0);
 	#endif
 	
@@ -305,7 +305,7 @@ int main(void)
 		printf("supported x=%d,y=%d, bit_per_pixel=%d mode=%04x video_addr=%08x\n",
 			kparam->xres,kparam->yres,kparam->bpp,kparam->vesa_mode,kparam->vaddr);
 		printf("Press any key to boot kernel");
-		get_key(0);
+//		get_key(0);
 		clear_screen();
 		
 		return 0;	
@@ -322,7 +322,7 @@ int main(void)
 		printf("%d * %d %d\n",xres,yres,bpp);
 	}
 
-	get_key(0);
+//	get_key(0);
 		
 	return (-1);
 	

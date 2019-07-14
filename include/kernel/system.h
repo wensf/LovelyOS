@@ -105,4 +105,7 @@ struct desc_ptr
 	);\
 }while(0)
 
+#define SIZEOF_NR(x) (sizeof(x)/sizeof(x[0]))
+
+
 #endif

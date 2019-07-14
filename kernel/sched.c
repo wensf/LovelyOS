@@ -1,6 +1,7 @@
 #include <io.h>
 #include <sched.h>
 #include <system.h>
+#include <init.h>
 #include <libc.h>
 #include <buffer.h>
 #include <memory.h>
@@ -59,7 +60,37 @@ void timer_interrupt(int cpl, unsigned long sp )
     }
 }
 
-#define SIZEOF_NR(x) (sizeof(x)/sizeof(x[0]))
+int pid;
+int state;
+int delay;
+int u_time;
+int k_time;
+struct thread_struct thread;
+struct file *file[FSAL_MAX_OPENED_FILE];
+int file_counter[FSAL_MAX_OPENED_FILE];
+unsigned long signal;
+int exit_code;
+unsigned int pgd;
+struct mm_struct mm;
+int last_fd;
+struct task_struct *parent;
+struct task_struct *prev;
+struct task_struct *next;
+
+
+void task_dump(struct task_struct *task)
+{
+	printk("task [%d]----------sizoef(task[%d]) is %d bytes\n", task->pid, task->pid, sizeof(*task));
+	printk("state=%08x\n",task->state);
+	printk("delay=%08x\n",task->delay);
+	printk("u_time=%08x\n",task->u_time);
+	printk("k_time=%08x\n",task->k_time);
+	printk("signal=%08x\n",task->signal);
+	printk("exit_code=%08x\n",task->exit_code);
+	printk("last_fd=%08x\n",task->last_fd);
+	printk("pgd=0x%08x\n", task->pgd);
+	printk("mm.stack_start=0x%08x\n",task->mm.stack_start);
+}
 
 void sched_init(void)
 {
@@ -92,17 +123,26 @@ void sched_init(void)
 	task[0]->u_time   = 0;
 	task[0]->k_time   = 0;
 	task[0]->last_fd  = 0;
+	for ( int i = 0; i < FSAL_MAX_OPENED_FILE; i++){
+		task[0]->file[i] = 0;
+	}	
+	task[0]->signal = 0;
+	task[0]->exit_code = 0;
 	task[0]->thread.ss0  = SELECTOR_KERNEL_DATA;
-	task[0]->thread.esp0 = struct_tcb + KERNEL_STACK_PAGES*PAGE_SIZE;
+	task[0]->thread.esp0 = struct_tcb + KERNEL_STACK_PAGES*PAGE_SIZE -4;
 	task[0]->thread.ss   = SELECTOR_USER_DATA;
-	task[0]->mm.stack_start = get_free_pages(USER_STACK_PAGES);
+	task[0]->mm.stack_start = get_free_pages(USER_STACK_PAGES) -4;
 	task[0]->thread.esp  = task[0]->mm.stack_start + USER_STACK_SIZE;
-	task[0]->pgd = 0x100000; // kernel page directory initiazied at kernel.S setup_paging()
+	task[0]->pgd = KERNEL_PAGE_DIR_ADDR; // kernel page directory initiazied at kernel.S setup_paging()
 	task[0]->parent = 0;
 	task[0]->prev = task[0];
 	task[0]->next = task[0];
 
 	printk("task[0] user stack at %08x\n",task[0]->thread.esp);
+	task_dump(task[0]);
+
+
+	
 	/**
      * Initalize the TSS structure for CPU.
      * Each CPU has only one TSS structure

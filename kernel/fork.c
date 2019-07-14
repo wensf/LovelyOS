@@ -10,7 +10,7 @@ extern void ret_from_fork(void);
 
 int printk(const char *fmt, ...);
 
-extern int last_pid;
+static int last_pid;
 
 void reg_copy(void *to, void *from, int cnt)
 {
@@ -83,7 +83,7 @@ int do_fork(unsigned long stack_start)
 	printk("struct_tcb[%d]=%08x, parent pid=%d\n", pid, (uint32)p, current->pid);
 	
 	p->pid    = pid;
-	p->state  = TASK_RUNNING;
+	p->state  = TASK_INTERRUPTABLE;
 	p->delay  = 0;
 	p->u_time = 0;
 	p->k_time = 0;
@@ -92,7 +92,7 @@ int do_fork(unsigned long stack_start)
 		p->file[i] = current->file[i];
 	}
 	/* alloc memory block to new task kernel stack */
-	p->thread.esp0 = (uint32)p + KERNEL_STACK_PAGES*PAGE_SIZE;
+	p->thread.esp0 = (uint32)p + KERNEL_STACK_PAGES*PAGE_SIZE -4;
 	p->thread.ss0 = SELECTOR_KERNEL_DATA;
 	p->thread.eip = (unsigned long)ret_from_fork;
 	p->thread.ss  = SELECTOR_USER_DATA;	
@@ -140,7 +140,12 @@ int do_fork(unsigned long stack_start)
 
 	#endif
 
+	p->state  = TASK_RUNNING;
 	task[pid] = p;
+
+	task_dump(p);
+
+	// printk("task[%d]->last_fd=%d\n", pid, p->last_fd);
 	
 	return pid;
 }

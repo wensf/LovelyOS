@@ -48,6 +48,10 @@
 .global syscall_get_pid		/* int syscall_get_pid(void); */
 .global _syscall_mmap		
 .global sys_mmap			/* unsigned int _syscall_mmap(unsigned long start, unsigned long length, unsigned long flags); */
+.global _syscall_exit
+.global syscall_exit		/* void syscall_exit(int exit_code);  */
+.global _syscall_wait
+.global syscall_wait		/* int syscall_wait(int *exit_code);  */
 .global _syscall_idle
 .global syscall_idle		/* void syscall_idle(void);  */
 .global nr_sys_calls
@@ -245,6 +249,20 @@ _syscall_mmap:
     addl  $12, %esp
     ret
     
+
+.align 4
+_syscall_exit:
+	pushl %ebx
+    call syscall_exit
+    addl  $4, %esp
+    ret
+
+.align 4
+_syscall_wait:
+	pushl %ebx
+    call syscall_wait
+    addl  $4, %esp
+    ret
 
 .global _parallel_interrupt
 .global parallel_interrupt
