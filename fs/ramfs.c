@@ -103,6 +103,8 @@ int get_fs_string(char *dstr,const char *sstr)
 		dstr[i++] = c;
 	}while( c != '\0' );
 
+	dstr[i] = '\0';
+
 	return (i);
 }
 
@@ -119,13 +121,12 @@ int ramfs_open( const char *path, int mode, int flags )
 	f_id = ramfile_fid_find((const int8*)path);
 	if ( (f_id < 0) && !(mode & O_CREAT) )
 	{	
-		
-		kernel_die("not found at %08x -> %s\n", (uint32)path,path);
+		kernel_die("task[%d] not found at %08x -> %s\n", current->pid,(uint32)path,path);
 		return (-1);
 	}
 
-	if ( f_id > MAX_RAM_FILE-1 ){
-		kernel_die("ramfs_open() error f_id=%d\n", f_id);
+	if ( f_id > (MAX_RAM_FILE-1) ){
+		kernel_die("task[%d] ramfs_open() error f_id=%d\n",current->pid, f_id);
 	}
 	
 	#if 0
@@ -140,12 +141,11 @@ int ramfs_open( const char *path, int mode, int flags )
 	ram_file *ram_filp;
 	
 	ram_filp = &ram_files[f_id];
-	printk("ram_files at %08x ram_filp=%08x, f_open=%08x\n",(uint32)&ram_files,ram_filp->f_ops,ram_filp->f_ops->f_open);
 	
 	filp = file_alloc();
 	if ( !filp )
 	{
-		kernel_die("file_alloc failed\n");
+		kernel_die("task[%d] ram_files at %08x ram_filp=%08x, f_open=%08x\n",current->pid,(uint32)&ram_files,ram_filp->f_ops,ram_filp->f_ops->f_open);
 		return (-1);
 	}
 	
@@ -160,17 +160,17 @@ int ramfs_open( const char *path, int mode, int flags )
 		kernel_die("last_unused failed\n");
 		return (-1);
 	}
-	printk("ramfs_open fd=%d\n",last_unused);
+
+//	printk("ramfs_open %s,ram_files at %08x ram_filp=%08x, f_open=%08x\n",path,(uint32)&ram_files,ram_filp->f_ops,ram_filp->f_ops->f_open);	
 	
 	current->file[last_unused] = filp;
 	current->file_counter[last_unused]++;
 	
 	if ( filp->f_ops && filp->f_ops->f_open )
  	{	
- 		printk("to call f_open()\n");
 		filp->f_ops->f_open(filp);
 	}else{
-		printk("no f_open to call\n");
+		kernel_die("task[%d] no f_open to call\n", current->pid);
 	}
 		
 	return last_unused;
@@ -202,8 +202,13 @@ int ramfs_lseek( int fd, int offset, int whence )
 
 	filp = current->file[fd];
 
+	#if 0
 	printk("task[%d] ramfs_lseek() fd=%d,offset=%d, whence=%d    ", current->pid, fd, offset, whence);
 	printk("filp=%08x, filp->f_ops=%08x, f_lseek=%08x  sstop=0x%08x ",filp, filp->f_ops, filp->f_ops->f_lseek,&fd);
+	#endif
+	if ( !filp ){
+		kernel_die("task[%d],ramfs_lseek() filp=0x%08x sstop=0x%08x\n", current->pid,filp,&fd);
+	}
 	
 	if ( filp && filp->f_ops && filp->f_ops->f_lseek )
 	{
@@ -219,11 +224,13 @@ int ramfs_write( int fd, const char *__buf, int len )
 	int i = 0;
 
 	if ( fd > MAX_RAM_FILE-1 ){
-		kernel_die("task[%d], ramfs_write %[%d] %s:%d error: fd=%d\n",current->pid, fd, __FILE__,__LINE__);
+		kernel_die("task[%d], ramfs_write [%d] %s:%d\n",current->pid, fd, __FILE__,__LINE__);
 	}
 	
 	filp = current->file[fd];
-	
+
+	// printk("task[%d], ramfs_write [%d] %s:%d\n",current->pid, fd, __FILE__,__LINE__);
+
 	if ( filp && filp->f_ops && filp->f_ops->f_write )
 	{
 		i = filp->f_ops->f_write( filp, __buf, len );
@@ -238,14 +245,20 @@ unsigned char *ramfs_mmap(int fd, int size, int flags)
 {
 	struct file *filp;
 
+	// kernel_die("task[%d], just stop on here fd=%d, size=%d, flags=%d\n",current->pid, fd, size, flags);
+
 	if ( (fd < 0) || (fd > MAX_RAM_FILE-1) )
 	{
-		kernel_die("task[%d], ramfs_mmap %[%d] %s:%d error: fd=%d\n",current->pid, fd, __FILE__,__LINE__);
+		kernel_die("task[%d], ramfs_mmap [%d] %s:%d error: fd=%d\n",current->pid, fd, __FILE__,__LINE__);
 	}
 
 	filp = current->file[fd];
-	
-	if ( filp && filp->f_ops && filp->f_ops->f_write )
+
+	if ( !filp ){
+		kernel_die("task[%d], ramfs_mmap() filp=0x%08x sstop=0x%08x\n", current->pid,filp,&fd);
+	}	
+			
+	if ( filp && filp->f_ops && filp->f_ops->f_mmap )
 	{
 		return filp->f_ops->f_mmap( filp, size, flags );
 	}else{
@@ -253,6 +266,34 @@ unsigned char *ramfs_mmap(int fd, int size, int flags)
 	}
 	return (0);
 }
+
+int ramfs_ioctl( int fd, int cmd, int arg)
+{
+	struct file *filp;
+
+	// kernel_die("task[%d], just stop on here fd=%d, cmd=%d, arg=%d\n",current->pid, fd, cmd, arg);
+
+	if ( (fd < 0) || (fd > MAX_RAM_FILE-1) )
+	{
+		kernel_die("task[%d], ramfs_ioctl [%d] %s:%d error: fd=%d\n",current->pid, fd, __FILE__,__LINE__);
+	}
+
+	filp = current->file[fd];
+
+	if ( !filp ){
+		kernel_die("task[%d], ramfs_ioctl() filp=0x%08x sstop=0x%08x\n", current->pid,filp,&fd);
+	}	
+			
+	if ( filp && filp->f_ops && filp->f_ops->f_ioctl )
+	{
+		return filp->f_ops->f_ioctl( filp, cmd, arg );
+	}else{
+		kernel_die("task[%d], ramfs_ioctl [%d] null point\n",current->pid,fd);
+	}	
+
+	return (-1);
+}
+
 
 int ramfs_close( int fd )
 {

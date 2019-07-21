@@ -16,7 +16,7 @@ SECTIONS{
 	}
 	. = ALIGN(4096);
 	.rdata : {
-		*(.rdata)
+		*(.rodata)
 	}
 	. = ALIGN(4096);
 	__code_end = .;

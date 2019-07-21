@@ -267,6 +267,16 @@ _syscall_wait:
     addl  $4, %esp
     ret
 
+.global _syscall_ioctl
+.global syscall_ioctl
+_syscall_ioctl:
+    pushl %edx
+	pushl %ecx
+	pushl %ebx
+    call syscall_ioctl
+    addl  $12, %esp
+    ret
+
 .global _parallel_interrupt
 .global parallel_interrupt
 .align  4
@@ -565,6 +575,7 @@ _page_fault:
 	xchgl %eax,(%esp)				
 	pushl %ecx
 	pushl %edx
+	pushl %ebx
 	push %ds
 	push %es
 	push %fs
@@ -584,6 +595,7 @@ _page_fault:
 	pop  %fs
 	pop  %es
 	pop  %ds
+	popl %ebx
 	popl %edx
 	popl %ecx
 	popl %eax

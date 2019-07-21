@@ -55,25 +55,19 @@ int do_page_map ( uint32 pgd, uint32 pa, uint32 va, int attr )
 	if ( *(pdir + pdir_entry ) == 0 )
 	{
 		ptable = (uint32 *) get_free_page();
+		memset(ptable,0,PAGE_SIZE);
 		*(pdir + pdir_entry )  = ((uint32)ptable & 0xFFFFF000) + attr;
-		if ( current ){
-			printk("malloc page table\n");
-		}
 	}else{
 		ptable = (uint32*)(*(pdir + pdir_entry ) & 0xFFFFF000);
-		if ( current ){
-			printk("exit page table\n");
-		}
 	}
 
 	*(ptable+ppte_entry) = (pa & 0xFFFFF000) + attr;
 
-	if ( current ){
-		printk("*(ptable+ppte_entry)=0x%08x\n",*(ptable+ppte_entry));
-	}
+#if 0
 	if ( current ){
 		printk("pgd=%08x,dir=[%d],pte=[%d],pa=%08x,va=%08x\n",pgd, pdir_entry,ppte_entry,pa,va);
 	}
+#endif
 
 	// update cr3
 #if 1

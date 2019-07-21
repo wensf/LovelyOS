@@ -19,6 +19,7 @@
 #define _SYSCALL_mmap          14
 #define _SYSCALL_exit          15
 #define _SYSCALL_wait          16
+#define _SYSCALL_ioctl		   17
 
 #define _syscall_0(type,name) \
 type name(void)\

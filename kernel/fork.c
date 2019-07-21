@@ -87,7 +87,7 @@ int do_fork(unsigned long stack_start)
 	p->delay  = 0;
 	p->u_time = 0;
 	p->k_time = 0;
-	p->last_fd = current->last_fd;
+	p->last_fd = 0;//current->last_fd;
 	for ( int i = 0; i < FSAL_MAX_OPENED_FILE; i++){
 		p->file[i] = current->file[i];
 	}
@@ -129,14 +129,12 @@ int do_fork(unsigned long stack_start)
  	}
 	#endif
 
-
-
 	/* 为子进程分配页目录,并复制父进程的页表项 */
 	p->pgd = get_free_page();
 	if ( !p->pgd ){
 		kernel_die("fork() get_free_page failed\n");
 	}
-	mm_copy(current, p);	
+	mm_copy(current, p);		
 	
 
 #if 0 // Copy the parent stack virtual space

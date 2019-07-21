@@ -22,6 +22,7 @@ static inline _syscall_0(unsigned int, get_utime)
 static inline _syscall_0(unsigned int, get_ktime)
 static inline _syscall_1(unsigned int, execve, const char *, file_name)
 static inline _syscall_3(unsigned char*, mmap, int, fd,unsigned long, size, unsigned long, flags)
+static inline _syscall_3(int, ioctl, int, fd,unsigned long, cmd, unsigned long, arg)
 
 
 int printf(int fd,const char *fmt,...)
@@ -42,9 +43,25 @@ int printf(int fd,const char *fmt,...)
 
 unsigned int *p_vram;
 
-inline void draw_pixel( int x, int y, int color )
+
+#define IOCTL_FB_INFO 0
+struct fb_info_struct
 {
-	*(p_vram+ y*1920+x) = color;
+	int xres;
+	int yres;
+};
+
+
+struct fb_info_struct fb_info;
+
+
+
+void draw_pixel( int x, int y, int color )
+{
+	if ( (x < fb_info.xres) && (y < (fb_info.yres)) )
+	{
+		*(p_vram+ y*fb_info.xres+x) = color;
+	}
 }
 
 void draw_line(int x, int y, int w, int h, int color)
@@ -71,43 +88,49 @@ never_return:
 int main(void)
 {
  	int i = 0;
-	int fd;
-	int fb;
+	int fd = 0;
+	int fb;	
 
-	fd = open("/dev/tty0",O_RDWR, 0);
-	(void)dup(0);
-	(void)dup(0);	
-	
-	lseek(fd,1920*48+960,SEEK_SET);
-	printf(fd,"Task sh is running\n");
-	
-	lseek(fd,1920*64+960,SEEK_SET);
-
+	#if 1
 	fb = open("/dev/fb",O_RDWR,0);
-	// p_vram = (unsigned int*)mmap(fb,1920*1080*4,0);
+	if ( ioctl(fb,IOCTL_FB_INFO,(int)&fb_info) < 0){
+		printf(fd,"ioctl failed\n");
+	}else{
+		lseek(fd,fb_info.xres*16+120,SEEK_SET);
+
+		printf(fd,"xres=%d, yres=%d\n", fb_info.xres, fb_info.yres);
+	}
+
+	lseek(fd,fb_info.xres*32+120,SEEK_SET);
+	printf(fd,"Task sh is running, fb=%d\n", fb);
+	
+	lseek(fd,fb_info.xres*48+120,SEEK_SET);
+	
+	p_vram = (unsigned int*)mmap(fb,fb_info.xres*fb_info.yres*4,0);
 	if ( p_vram ){
  		printf(fd,"mmap done p_vram=%08x\n", p_vram);
 	}else{
 		printf(fd,"mmap failed\n");
 	}
-
-	int x = 1920/2;
-	int y = (1080/3)*2;
+	#endif
+	int x = fb_info.xres/2;
+	int y = (fb_info.yres/3)*2;
 	int color = 0;
 	
 	while(1)
 	{
-		lseek(fd,1920*80+960,SEEK_SET);
-		printf(fd,"Hello Loverly OS stack at %08x,i=%08d\n",(unsigned int)&i, i++);
+		// lseek(fd,fb_info.xres*64+120,SEEK_SET);
+		printf(fd,"Hello Loverly OS stack at %08x,i=%08d\n",(unsigned int)&i, i);
+		i++;
 
 		if ( !(i % 3) ){
 			sleep(1000);
 		}
 
-		// draw_line(x,y,100,4,color);
+		draw_line(x,y,100,4,color);
 
 		y += 8;
-		y %= 1080;
+		y %= fb_info.yres;
 		color += 10;
 
 		if ( i > 10 ){

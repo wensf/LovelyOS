@@ -207,7 +207,7 @@ void init(void)
 	(void)dup(0);
 	(void)dup(0);
 
-	lseek(0,1920*0+960,SEEK_SET);
+	lseek(0,kparam->xres*0+120,SEEK_SET);
 	printf("task init, stack_top=0x%08x\n", (uint32)&i);
 
     int pid;
@@ -230,20 +230,12 @@ void init(void)
 			_exit(execve("/bin/sh")); // exit if execve failed
 		}
 		while(1){
-			
-			//if (pid==wait(&i))
-			//	break;
-				lseek(0,1920*16+960,SEEK_SET);
-				int cpid = wait(&i);	
-				printf("child pid=0x%x\r\n",pid);
-				//if ( pid == cpid){
-					break;
-			//	}
-
-				lseek(0,1920*32+960,SEEK_SET);
-				printf("wait 0x%x at 0x%08x,child %d exit with %d\n",pid,&pid, cpid, i);
+			if (pid==wait(&i)){
+				break;
+			}
 		}
-		lseek(0,1920*48+960,SEEK_SET);
+	
+		lseek(0,kparam->xres*80+120,SEEK_SET);
 		printf("\r\nchild 0x%x died with code %d\n\r", pid, i);
 		while(1);;
 		// sleep(3000000);
