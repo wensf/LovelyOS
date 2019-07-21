@@ -3,6 +3,8 @@
 #define __SCHED_H__
 
 #include <fs/vfs.h>
+#include <types.h>
+
 
 #define SELECTOR_USER_CODE   (0x18 +3)
 #define SELECTOR_USER_DATA   (0x20 +3)
@@ -66,9 +68,26 @@ struct thread_struct
 	unsigned long trace_bitmap;
 };
 
+/**
+ * TCB 结构成员mm
+ * 用于记录任务所分配的各个虚拟地址情况.
+ */
+struct vmb
+{
+	struct vmb *next;
+	uint32 vaddr;	// 页开始
+	uint32 length;	// 页大小(固定为4KB)
+	uint32 attrs;	// 页属性
+	uint32 count;	// 共享次数
+};
+
 struct mm_struct
 {
-	unsigned long  stack_start;
+	uint32 pgd;					// 页目录地址
+	struct vmb *code_start;		// 代码段开始
+	struct vmb *data_start;		// 数据段开始
+	struct vmb *stack_start;	// 栈开始
+	struct vmb *heap_start;		// 堆开始
 };
 
 struct task_struct

@@ -21,10 +21,10 @@ static inline _syscall_0(void,idle)
 static inline _syscall_0(unsigned int, get_utime)
 static inline _syscall_0(unsigned int, get_ktime)
 static inline _syscall_1(unsigned int, execve, const char *, file_name)
-static inline _syscall_3(unsigned char*, mmap, unsigned long, start,unsigned long, length, unsigned long, flags)
+static inline _syscall_3(unsigned char*, mmap, int, fd,unsigned long, size, unsigned long, flags)
 
 
-int printf(const char *fmt,...)
+int printf(int fd,const char *fmt,...)
 {
 	char buf[256];
 	va_list ap;
@@ -34,7 +34,8 @@ int printf(const char *fmt,...)
 	vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
 
-	i = write( 0, buf, strlen(buf) );
+//	i = write( 0, buf, strlen(buf) );
+	i = write( fd, buf, strlen(buf));
 
 	return (i);
 }
@@ -70,16 +71,24 @@ never_return:
 int main(void)
 {
  	int i = 0;
+	int fd;
+	int fb;
+
+	fd = open("/dev/tty0",O_RDWR, 0);
+	(void)dup(0);
+	(void)dup(0);	
 	
-	lseek(0,1920*48,SEEK_SET);
-	printf("Task sh is running\n");
+	lseek(fd,1920*48+960,SEEK_SET);
+	printf(fd,"Task sh is running\n");
 	
-	lseek(0,1920*64,SEEK_SET);
-	p_vram = (unsigned int*)mmap(0,1920*1080*4,0);
+	lseek(fd,1920*64+960,SEEK_SET);
+
+	fb = open("/dev/fb",O_RDWR,0);
+	// p_vram = (unsigned int*)mmap(fb,1920*1080*4,0);
 	if ( p_vram ){
- 		printf("mmap done p_vram=%08x\n", p_vram);
+ 		printf(fd,"mmap done p_vram=%08x\n", p_vram);
 	}else{
-		printf("mmap failed\n");
+		printf(fd,"mmap failed\n");
 	}
 
 	int x = 1920/2;
@@ -88,21 +97,21 @@ int main(void)
 	
 	while(1)
 	{
-		lseek(0,1920*80,SEEK_SET);
-		printf("Hello Loverly OS stack at %08x,i=%08d\n",(unsigned int)&i, i++);
+		lseek(fd,1920*80+960,SEEK_SET);
+		printf(fd,"Hello Loverly OS stack at %08x,i=%08d\n",(unsigned int)&i, i++);
 
-		//if ( !(i % 3) ){
-			sleep(2500);
-		//}
+		if ( !(i % 3) ){
+			sleep(1000);
+		}
 
-		draw_line(x,y,100,4,color);
+		// draw_line(x,y,100,4,color);
 
 		y += 8;
 		y %= 1080;
 		color += 10;
 
 		if ( i > 10 ){
-			exit(-1);
+			exit(0);
 		}
 	}
 	

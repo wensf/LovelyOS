@@ -8,8 +8,7 @@
 #ifndef __MMAP_H__
 #define __MMAP_H__
 
-extern unsigned char *mmap(unsigned long start, unsigned long length, unsigned long flags);
-extern unsigned char *syscall_mmap(unsigned long start, unsigned long length, unsigned long flags);
+extern unsigned char *syscall_mmap(int fd, unsigned long size, unsigned long flags);
 
 #endif
 

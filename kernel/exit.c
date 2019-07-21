@@ -11,11 +11,10 @@ int do_exit(int exit_code)
 	
 	current->state = TASK_STOP;
 	current->exit_code = exit_code;
-	if (!p)
-	{
+	if (!p){
 		p = task[0];
 	}
-	printk("send signal to parent[%d]\n", p->pid);
+	printk("send signal to parent [%d]\n", p->pid);
 	p->signal |= (0x1<<0);	// signal to parent task.
 	if ( p->state == TASK_WAIT ){
 		p->state = TASK_RUNNING;

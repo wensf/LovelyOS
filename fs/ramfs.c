@@ -122,8 +122,10 @@ int ramfs_open( const char *path, int mode, int flags )
 		
 		kernel_die("not found at %08x -> %s\n", (uint32)path,path);
 		return (-1);
-	}else{
-		printk("fid =%d\n", f_id);
+	}
+
+	if ( f_id > MAX_RAM_FILE-1 ){
+		kernel_die("ramfs_open() error f_id=%d\n", f_id);
 	}
 	
 	#if 0
@@ -193,8 +195,15 @@ int ramfs_lseek( int fd, int offset, int whence )
 {
 	struct file *filp;
 	int i = -1;
-	
+
+	if ( fd < 0 ){
+		kernel_die("task[%d],ramfs_lseek() fd=%d sstop=0x%08x\n", current->pid,fd,&fd);
+	}
+
 	filp = current->file[fd];
+
+	printk("task[%d] ramfs_lseek() fd=%d,offset=%d, whence=%d    ", current->pid, fd, offset, whence);
+	printk("filp=%08x, filp->f_ops=%08x, f_lseek=%08x  sstop=0x%08x ",filp, filp->f_ops, filp->f_ops->f_lseek,&fd);
 	
 	if ( filp && filp->f_ops && filp->f_ops->f_lseek )
 	{
@@ -225,6 +234,26 @@ int ramfs_write( int fd, const char *__buf, int len )
 	return (i);
 }
 
+unsigned char *ramfs_mmap(int fd, int size, int flags)
+{
+	struct file *filp;
+
+	if ( (fd < 0) || (fd > MAX_RAM_FILE-1) )
+	{
+		kernel_die("task[%d], ramfs_mmap %[%d] %s:%d error: fd=%d\n",current->pid, fd, __FILE__,__LINE__);
+	}
+
+	filp = current->file[fd];
+	
+	if ( filp && filp->f_ops && filp->f_ops->f_write )
+	{
+		return filp->f_ops->f_mmap( filp, size, flags );
+	}else{
+		kernel_die("task[%d], ramfs_mmap [%d] null point\n",current->pid,fd);
+	}
+	return (0);
+}
+
 int ramfs_close( int fd )
 {
 	struct file *filp;
@@ -238,6 +267,7 @@ int ramfs_close( int fd )
 	}
 
 	file_free(filp);
+	current->file[fd] = 0;
 	
 	return (i);
 }

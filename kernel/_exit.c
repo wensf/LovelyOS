@@ -1,7 +1,7 @@
 #include <syscall.h>
 #include <types.h>
 
-void _exit( int exit_code )
+void  _exit( int exit_code )
 {
 never_return:
 	__asm__("movl %1,%%ebx\n\t"

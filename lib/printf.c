@@ -27,7 +27,7 @@ type name(atype a, btype b, ctype c)\
 	}\
 }
 
-inline _syscall_3(int,write,int,fd,char *,__buf, int, len)
+_syscall_3(int,write,int,fd,char *,__buf, int, len)
 
 int printf(const char *fmt,...)
 {

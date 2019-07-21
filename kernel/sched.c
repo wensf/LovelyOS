@@ -4,7 +4,8 @@
 #include <init.h>
 #include <libc.h>
 #include <buffer.h>
-#include <memory.h>
+#include <page.h>
+#include <slab.h>
 #include <printk.h>
 
 #define _local_irq_save(x) 	\
@@ -24,12 +25,11 @@ __asm__ ("pushl %0 \n\t" 		\
 
 struct task_struct *task[TASK_NR];
 static struct tss_struct tss;
-struct task_struct *current;
+struct task_struct *current = 0;
 
 extern void timer_int(void);
 
 void schedule(void);
-
 
 int draw_text( int x, int y, const char *fmt,...);
 
@@ -92,14 +92,20 @@ void task_dump(struct task_struct *task)
 	printk("mm.stack_start=0x%08x\n",task->mm.stack_start);
 }
 
+#define TASK0_KERNEL_STACK(x) unsigned long __attribute__((aligned (PAGE_SIZE))) x[KERNEL_STACK_SIZE]
+#define TASK0_USER_STACK(x) unsigned long __attribute__((aligned (PAGE_SIZE))) x[USER_STACK_SIZE]
+
+TASK0_KERNEL_STACK(task_idle);
+TASK0_USER_STACK(task_idle_user_stk);
+
 void sched_init(void)
 {
 	/**
      * Make first task by manual
      */
-	unsigned long struct_tcb = get_free_pages(KERNEL_STACK_PAGES);
+	unsigned long struct_tcb = (unsigned long)task_idle;
 	
-	printk("struct_tcb[%d]=%08x\n", 0, struct_tcb);
+	printk("struct_tcb[%d]=0x%08x\n", 0, struct_tcb);
 	
 	memset( task, 0, sizeof(task));
 
@@ -131,18 +137,22 @@ void sched_init(void)
 	task[0]->thread.ss0  = SELECTOR_KERNEL_DATA;
 	task[0]->thread.esp0 = struct_tcb + KERNEL_STACK_PAGES*PAGE_SIZE -4;
 	task[0]->thread.ss   = SELECTOR_USER_DATA;
-	task[0]->mm.stack_start = get_free_pages(USER_STACK_PAGES) -4;
-	task[0]->thread.esp  = task[0]->mm.stack_start + USER_STACK_SIZE;
+	struct vmb *vm = (struct vmb *)slab_alloc(sizeof(struct vmb));
+	vm->vaddr = task_idle_user_stk;//get_free_pages(USER_STACK_PAGES);
+	vm->count = 0;
+	vm->length = PAGE_SIZE;
+	vm->next = 0;
+	vm->attrs = P_P|P_US|P_RW;
+	task[0]->mm.stack_start = vm;
+	task[0]->thread.esp  = vm->vaddr + USER_STACK_SIZE - 4;
 	task[0]->pgd = KERNEL_PAGE_DIR_ADDR; // kernel page directory initiazied at kernel.S setup_paging()
 	task[0]->parent = 0;
 	task[0]->prev = task[0];
 	task[0]->next = task[0];
 
-	printk("task[0] user stack at %08x\n",task[0]->thread.esp);
-	task_dump(task[0]);
+	printk("task[0] user stack at 0x%08x\n",task[0]->thread.esp);
+	// task_dump(task[0]);
 
-
-	
 	/**
      * Initalize the TSS structure for CPU.
      * Each CPU has only one TSS structure
@@ -261,7 +271,7 @@ void schedule(void)
 			);
 #endif
 	
-	draw_text(1920/2,0,"-%d-",i);	
+//	draw_text(1920/2,0,"-%d-",i);	
 	tss.esp0 = next->thread.esp0;
 	_local_irq_restore(eflags);
     switch_to(prev, next, last);

@@ -46,7 +46,7 @@ int tty_write( struct file *filp, const char *__buf, int len )
 			filp->w_o += 1920-x;
 		    y += 16; x = 0;
 		}else{
-	    	putchar(x, y, __buf[i], 0xFFFFFF, 0x0);
+	    	putchar(x, y, __buf[i], 0xFFFFFF, 0x101010);
 			x += 8;
 			filp->w_o += 8;
 		}

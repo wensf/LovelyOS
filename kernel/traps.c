@@ -98,13 +98,6 @@ void generic_protected_fault( int cpl, unsigned long esp )
 	kernel_panic(cpl, esp);
 }
 
-extern void do_page_fault(void);
-
-void page_fault(int cpl, unsigned long esp )
-{ 
-	do_page_fault();
-}
-
 void parallel_interrupt(int cpl, unsigned long esp)
 {
 	printk("parallel_interrupt\n");

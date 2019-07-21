@@ -1,4 +1,5 @@
 #include <syscall.h>
+#include <types.h>
 #include <wait.h>
 #include <sched.h>
 #include <system.h>
@@ -8,21 +9,38 @@
 
 int do_wait(int *exit_code)
 {
-	printk("\n\n\n\n\n\ndo_wait()...............\n");
-
+//	struct vmb *m;
+	int i;
+	
 	current->state = TASK_WAIT;
 	while ( !(current->signal & 0x1)){
 		schedule();
 	}
 
-	for ( int i = 0; i < SIZEOF_NR(task); i++ ){
+	for ( i = 0; i < SIZEOF_NR(task); i++ ){	// 寻找任意一个退出的子(孙)任务.
 		if ( task[i] && task[i] != current &&
 			task[i]->state == TASK_STOP ){
 			*exit_code = task[i]->exit_code; 
-			printk("wait() exit...............\n");
-			return i;
+			break;
 		}
 	}
+
+	if ( i < SIZEOF_NR(task) ){
+//		m = current->mm.code_start;		// 释放任务的代码段，数据段，用户栈，内核栈.
+//		while ( m != NULL ){
+//			free_page(mm->code_start);
+//		}
+//		free_page(current->pgd);
+//		free_page(current);
+
+		current->signal &= ~(1<<0);
+
+		printk("task[%d] exit do_wait()\n", current->pid);
+
+		return (i);		// PID
+	}
+
+	printk("task[%d] exit do_wait()\n", current->pid);
 	
 	return (-1);	// Error
 }

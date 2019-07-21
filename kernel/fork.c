@@ -2,8 +2,8 @@
 #include <sched.h>
 #include <buffer.h>
 #include <libc.h>
-#include <memory.h>
 #include <page.h>
+#include <slab.h>
 #include <traps.h>
 
 extern void ret_from_fork(void);
@@ -80,7 +80,7 @@ int do_fork(unsigned long stack_start)
 	*p = *current;
 	pid = ++last_pid;
 
-	printk("struct_tcb[%d]=%08x, parent pid=%d\n", pid, (uint32)p, current->pid);
+	printk("struct_tcb[%d]=%08x, task[%d] fork():\n", pid, (uint32)p, current->pid);
 	
 	p->pid    = pid;
 	p->state  = TASK_INTERRUPTABLE;
@@ -110,40 +110,66 @@ int do_fork(unsigned long stack_start)
 
 	#if 1
 
+	#if 1
+	// 将父进程用户栈设置为只读,并将页面计数+1,当父子进程任何一个进行写入操作时，将page_default，从而重新分配页面.
+ 	for ( int i = 0; i < USER_STACK_PAGES; i++ )
+	{
+		unsigned long vaddr = current->mm.stack_start->vaddr+i*PAGE_SIZE;
+		if (page_attrs_set(current->pgd,vaddr,P_P|P_US) != 0 )
+		{
+			kernel_die("page_attrs_set [0x%08x] failed\n", vaddr);
+		}else{
+			printk("page_attrs_set [0x%08x] to 0x%08x\n", vaddr, P_P|P_US);	
+		}	
+		#if 1
+		if ( vaddr >= low_memory_start ){
+			mem_map[MAP_NR(vaddr)]++;
+		}
+		#endif
+ 	}
+	#endif
+
+
+
 	/* 为子进程分配页目录,并复制父进程的页表项 */
 	p->pgd = get_free_page();
 	if ( !p->pgd ){
-		printk("FILE %s,LINE %d\n",__FILE__,__LINE__);
-		while(1);
+		kernel_die("fork() get_free_page failed\n");
 	}
-	mm_copy(current, p);
-
-	#if 0
-	uint32 *dir = (uint32*)p->pgd;
-	for ( int i = 0; i < 4; i++ )
-	{
-		printk("i = %08x\n",dir[i]);
-	}
-	#endif
+	mm_copy(current, p);	
 	
-	#if 1
-	// 将父进程用户栈设置为只读,当父子进程任何一个进行写入操作时，将page_default，从而重新分配页面.
- 	for ( int i = 0; i < USER_STACK_PAGES; i++ )
+
+#if 0 // Copy the parent stack virtual space
+	struct vmb *p_vmb;
+
+	p_vmb = current->mm.stack_start;
+	while (p_vmb)
 	{
-		uint32 vaddr = p->mm.stack_start+i*PAGE_SIZE;
+		struct vmb *vmb = (struct vmb *)slab_alloc(sizeof(struct vmb));
+		vmb->attrs = P_P|P_US;
+		vmb->count = 0;
+		vmb->length = PAGE_SIZE;
+		vmb->vaddr = p_vmb->vaddr;
+		
+		vmb->next = p->mm.stack_start;
+		p->mm.stack_start = vmb;
+
+		uint32 vaddr = p_vmb->vaddr;
 		if (page_attrs_set(p->pgd,vaddr,P_P|P_US) != 0 )
 		{
 			kernel_die("page_attrs_set [%08x] failed\n", vaddr);
-		}
-	}	
-	#endif
+		}		
 
+		p_vmb = p_vmb->next;
+	}
+#endif
+	
 	#endif
 
 	p->state  = TASK_RUNNING;
 	task[pid] = p;
 
-	task_dump(p);
+	// task_dump(p);
 
 	// printk("task[%d]->last_fd=%d\n", pid, p->last_fd);
 	

@@ -126,6 +126,9 @@ _syscall_fork:
 	pushl %esp
 	call do_fork
 	addl $4, %esp
+	pushl %eax
+	call schedule
+	popl %eax
 1:  ret
 
 .align 4
@@ -161,7 +164,7 @@ _syscall_read:
 	pushl %ebx
     call syscall_read
     addl  $12, %esp
-	call schedule
+//	call schedule
     ret
 
 .align 4
@@ -181,7 +184,7 @@ _syscall_close:
     pushl %ebx
     call syscall_close
     addl  $4, %esp
-	call schedule
+//	call schedule
     ret
 
 
@@ -190,7 +193,7 @@ _syscall_dup:
     pushl %ebx
     call syscall_dup
     addl  $4, %esp
-	call schedule
+//	call schedule
     ret
 
 .align 4
@@ -200,7 +203,7 @@ _syscall_lseek:
 	pushl %ebx
     call syscall_lseek
     addl  $12, %esp
-	call schedule
+//	call schedule
     ret
 
 .align 4
@@ -554,47 +557,37 @@ _operation_fault:
 
 .global _page_fault
 .global page_fault
+.global do_no_page
+.global do_wp_page
 
 .align 4
 _page_fault:
-	// pushl $0                       /** Error Code push by CPU */
+	xchgl %eax,(%esp)				
+	pushl %ecx
+	pushl %edx
 	push %ds
 	push %es
-	push %gs
 	push %fs
-	pushl %ebp
-	pushl %edi
-	pushl %esi
-	pushl %edx
-	pushl %ecx
-	pushl %ebx
-	pushl %eax
+	movl $0x10, %edx
+	mov  %dx, %ds
+	mov  %dx, %es
+	mov  %dx, %fs
+	movl %cr2, %edx
+	push %edx
+	push %eax
+	testl $1, %eax
+	jne  1f
+	call do_no_page
+	jmp	 2f
+1:	call do_wp_page
+2:	addl $8, %esp
+	pop  %fs
+	pop  %es
+	pop  %ds
+	popl %edx
+	popl %ecx
+	popl %eax
+	iret
 
-    pushl %esp
 
-    movl  44(%esp), %eax                #
-    andl  $3, %eax                      # cpl
-    pushl %eax
-    movl $0x10,%edx
-    mov   %dx,%ds
-    mov   %dx,%es
-    mov   %dx,%fs
-    mov   %dx,%gs
-
-	call page_fault
-    addl  $8,%esp
-
-    popl  %eax
-    popl  %ebx
-    popl  %ecx
-    popl  %edx
-    popl  %esi
-    popl  %edi
-    popl  %ebp
-    pop   %fs
-    pop   %gs
-    pop   %es
-    pop   %ds
-    addl  $4, %esp
-    iret     
-
+	

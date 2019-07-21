@@ -6,7 +6,7 @@
 #define COLOR_GREEN               	0X00FF00
 #define COLOR_BLUE                	0X00FF00
 
-#define CCOF		           		0x505050
+#define CCOF		           		0x808080
 #define CCOB        		   		0x101010
 
 

@@ -12,8 +12,7 @@
 #include <irq.h>
 #include <8259A.h>
 #include <sched.h>
-#include <memory.h>
-#include <mm/page.h>
+#include <page.h>
 #include <system.h>
 #include <version.h>
 #include <printf.h>
@@ -26,6 +25,8 @@
 #include <syscall.h>
 #include <printf.h>
 #include <_exit.h>
+#include <slab.h>
+#include <fb.h>
 
 struct kernel_param *kparam;
 /**
@@ -118,6 +119,9 @@ struct mem_info_struct
 };
 
 void init(void);
+extern long __code_start,__data_start,__bss_start;
+extern long __code_end, __data_end, __bss_end;
+extern long __start, __end;
 
 int idle_cnt;
 
@@ -127,6 +131,7 @@ int main( int argc, char *argv[] )
     mem_init(0x200000, 0x800000);
 	console_init();
 	page_init();
+	slab_init();
 	vesa_test();		
 	printk("xres = % 4d, yres=% 4d, bpp=%d, mode=%04x, video_addr=%08x\n",
 					kparam->xres,
@@ -135,6 +140,10 @@ int main( int argc, char *argv[] )
 					kparam->vesa_mode,
 					kparam->vaddr
 	);
+	printk("Kernel Info:\ncode_start 0x%08x, data_start 0x%08x, bss_start 0x%08x\n"
+		"code end   0x%08x, data_end   0x%08x, bss_end   0x%08x\n",
+		&__code_start,&__data_start,&__bss_start,
+		&__code_end,&__data_end,&__bss_end);
 	struct mem_info_struct *ms;
 	ms = (struct mem_info_struct *)(0x98000+sizeof(struct kernel_param));
 	printk("BaseAddrL BaseAddrH LengthLow LengthHigh    Type\n");
@@ -156,6 +165,8 @@ int main( int argc, char *argv[] )
         ms++;
     }
     printk("RAM size %08x(%dKB)\n", total_memory, total_memory/1024);
+	printk("low_memory_start = 0x%08x, low_memory_end=0x%08x\n",
+		low_memory_start, low_memory_end);
 	printk("%s\n",version);
 
 	trap_init();
@@ -165,13 +176,9 @@ int main( int argc, char *argv[] )
 	vfs_init();
 	chrdev_init();
 	tty_init();
+	fb_init();
 	sched_init();
     sti();
-#if 0
-	uint32 start = task[0]->mm.stack_start+USER_STACK_SIZE;
-	__asm__ __volatile__("mov %0, %%eax\n\t"\
-						 "mov %%eax, %%esp\n\t"::"c"(start));
-#endif
 	move_to_user_mode();
 	if ( !fork() )
 	{
@@ -184,21 +191,33 @@ int main( int argc, char *argv[] )
 
 }
 
+int volatile s_seek(int fd, int offset, int wherence)
+{
+	lseek(fd,offset,wherence);
+
+	return 0;
+}
+
 void init(void)
 {
 	int i = 0;
+	int st[200];
 
 	(void)open("/dev/tty0",O_RDWR, 0);
 	(void)dup(0);
 	(void)dup(0);
 
-	printf("task init, stack_top=%08x\n", (uint32)&i);
+	lseek(0,1920*0+960,SEEK_SET);
+	printf("task init, stack_top=0x%08x\n", (uint32)&i);
 
     int pid;
 
+	int p = 100;
+
 	for (;;)
 	{
-		if ((pid=fork()) < 0 )
+	#if 1
+		if ((pid=fork()) < 0)
 		{
 			printf("init: fork() failed\n\r");
 			continue;
@@ -210,106 +229,60 @@ void init(void)
 			(void)dup(0);
 			_exit(execve("/bin/sh")); // exit if execve failed
 		}
-		while(1)
-			if (pid==wait(&i))
-				break;
-		printf("\r\nchild %d died with code %d\n\r", pid, i);
-		while(1);;
-	}
-}
+		while(1){
+			
+			//if (pid==wait(&i))
+			//	break;
+				lseek(0,1920*16+960,SEEK_SET);
+				int cpid = wait(&i);	
+				printf("child pid=0x%x\r\n",pid);
+				//if ( pid == cpid){
+					break;
+			//	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#if 0
-
-#define DRAW_LOGO         0
-
-void task_1(void)
- {
-	int i = 0;
-#if (DRAW_LOGO==1)
-	int x = 0,y = 420+32+300;
-#endif
-	int last_count = 0;
-
-
-	(void)open("/dev/tty1",O_RDWR, 0);
-	(void)dup(0);
-	(void)dup(0);
-
-	printf("task_1 test printf syscall stack=%08x\n", (uint32)&i);
-
-#if 1
-	int pid;
-
-	if (!(pid=fork()))
-	{
-		execve("/bin/sh");
-	}else {
-#endif
-
-		for (;;)
-		{
-			i++;
-			// if ( last_count != timer_c )
-			{
-				last_count = timer_c;
-
-				#if 1
-				lseek(0,1920*16,SEEK_SET);
-				printf("pid=%d i=%08x,ticks: %08d utime=%8d ktime=%8d idle_cnt=%08d,st:%08x\n",
-						current->pid,
-						i,
-						timer_c,
-						get_utime(),
-						get_ktime(),
-						idle_cnt,
-						(uint32)&i);
-				#endif
-				
-				#if 0
-				draw_text(0,360+32,"pid=%d i=%08x,ticks: %08d utime=%8d ktime=%8d",
-						current->pid,
-						i,
-						timer_c,
-						get_utime(),
-						get_ktime()
-				 );
-				#endif
-			}
-#if (DRAW_LOGO==1)
-
-			 if( x > 0 )
-	 			draw_v_line(x-1,y,  1,144,0x80<<8);
-	 		 draw_bitmap(x,  y,120,144,(unsigned char*)(0x800000));
-	 		 x++; x %= 1920;
-			 for ( int k =0; k < 100000; k++);;
-#endif			 
-			 sleep(2000);
-
+				lseek(0,1920*32+960,SEEK_SET);
+				printf("wait 0x%x at 0x%08x,child %d exit with %d\n",pid,&pid, cpid, i);
 		}
+		lseek(0,1920*48+960,SEEK_SET);
+		printf("\r\nchild 0x%x died with code %d\n\r", pid, i);
+		while(1);;
+		// sleep(3000000);
+
+	#else
+		if ( fork() == 0 ){
+			for ( int i = 0; i < 100; i++ ){
+				st[i] = i;
+				
+ 				lseek(0,1920*16+960,SEEK_SET);
+ 				printf("task[%d],st[%d]=%d,stack=0x%08x,p =%d\n",getpid(),i,st[i],&i,p);
+				sleep(15000);
+			}
+
+			_exit(0);
+		}else{
+
+			for ( int i = 0; i < 100; i++ ){
+				st[i] = i;
+				p++;
+				lseek(0,1920*32+960,SEEK_SET);
+				
+				printf("task[%d],st[%d]=%d,stack=0x%08x,p=%d\n",getpid(),i,st[i],&i,p);
+				sleep(20000);
+			}
+			pid = wait(&i);
+			printf("wait() %d,%d\n",pid, i);
+			while(1);
+		}
+
+		while(1);
+	#endif
+	
 	}
 }
 
-#endif
+
+
+
 
 
 

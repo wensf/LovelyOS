@@ -36,6 +36,7 @@ struct file_operations
 	int (*f_read)( struct file *filp, char *__buf, int len );
 	int (*f_lseek)( struct file *filp, int offset, int whence );
 	int (*f_write)( struct file *filp, const char *__buf, int len );
+	unsigned char *(*f_mmap)(struct file *filp, int size, int flags);
 	int (*f_close)( struct file *filp );
 };
 

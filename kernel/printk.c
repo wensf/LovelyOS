@@ -17,13 +17,11 @@ int printk(const char *fmt,...)
 
     int i = 0;
 	
-#if 1
-
     while( buf[i] != '\0' )
 	{
 		if ( buf[i] == '\n'){
 		    y += 16; x = 0;
-			y %= kparam->yres;
+			y %= (kparam->yres-48);
 		}else if ( buf[i] == '\t' ){
 			x += 4*8;
 			x %= kparam->xres;
@@ -38,20 +36,11 @@ int printk(const char *fmt,...)
 			{
 				x = 0; 
 				y += 16;
-				y %= kparam->yres;
+				y %= (kparam->yres-48);
 			}
 		}
 		i++;
 	}
-#else
-	// putchar(0, 0, 'K', 0xFF0000, 0);
-	const int color[4] = {0xFF0000,0xFF00,0xFF,0xFFFFFF};
-	for ( int i = 0; i < kparam->xres/2; i++ ){
-		for ( int j = 0; j < 4; j++ ){
-			setpixel(i,j,color[j]);
-		}
-	}
-#endif
 	
 	return (i);
 }

@@ -13,7 +13,7 @@
 .global _idt
 .global _gdt
 .global _putc
-
+.global task_idle_user_stk
 /**
  * The Kernel entry point, linked at 0x00008000 in the future.
  */
@@ -50,6 +50,10 @@ _clear_bss:
 	cld
 	rep
 	stosb
+
+	movl $task_idle_user_stk, %eax
+	addl $4092, %eax
+	movl %eax, %esp
 	
     call    setup_paging
 
