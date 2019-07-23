@@ -172,10 +172,10 @@ int main( int argc, char *argv[] )
 	trap_init();
 	IRQ_init();
 	init_8259A();
-	init_keyboard();
 	vfs_init();
 	chrdev_init();
 	tty_init();
+	keyboard_init();
 	fb_init();
 	sched_init();
     sti();
@@ -201,7 +201,6 @@ int volatile s_seek(int fd, int offset, int wherence)
 void init(void)
 {
 	int i = 0;
-	int st[200];
 
 	(void)open("/dev/tty0",O_RDWR, 0);
 	(void)dup(0);
@@ -211,8 +210,6 @@ void init(void)
 	printf("task init, stack_top=0x%08x\n", (uint32)&i);
 
     int pid;
-
-	int p = 100;
 
 	for (;;)
 	{
@@ -237,8 +234,7 @@ void init(void)
 	
 		lseek(0,kparam->xres*80+120,SEEK_SET);
 		printf("\r\nchild 0x%x died with code %d\n\r", pid, i);
-		while(1);;
-		// sleep(3000000);
+		sleep(3000);
 
 	#else
 		if ( fork() == 0 ){

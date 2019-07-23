@@ -311,22 +311,6 @@ void keyboard_irq( int cpl, unsigned int esp )
 	#endif
 }
 
-void init_keyboard(void)
-{
-	m_shift_l = 0;
-	m_shift_r = 0;
-	m_leading_e0 = 0;
-	k_queue.h = 0;
-	k_queue.t = 0;
-
-	/**
-	 * Init the keyboard.
-     */
-    set_igate_descriptor(0x21, 3, _keyboard_irq);
-
-	outb(inb(0x21) & ~0x2, 0x21);
-}
-
 int32 key_read(void)
 {
     uint8 scan_code = 0, shift = 0;
@@ -392,6 +376,103 @@ int32 key_read(void)
 
     return 0;
 }
+
+
+
+#include <libc.h>
+#include <chrdev.h>
+#include <vfs.h>
+
+
+int keyboard_open( struct file *filp )
+{
+	printk("keyboard_open()\n");
+	return (0);
+}
+
+int keyboard_read( struct file *filp, char *__buf, int len )
+{
+	printk("keyboard_read()\n");
+
+	return (0);
+}
+
+int keyboard_lseek( struct file *filp, int offset, int whence )
+{
+	printk("keyboard_lseek()\n");
+
+	return (0);
+}
+
+int keyboard_write( struct file *filp, const char *__buf, int len )
+{
+	printk("keyboard_write()\n");
+
+	return (0);
+}
+
+unsigned char *keyboard_mmap(struct file *filp, int size, int flags)
+{
+	printk("keyboard_mmap()\n");
+
+	return (0);
+}
+
+int keyboard_ioctl(struct file *filp, int cmd, int arg)
+{
+	printk("keyboard_ioctl()\n");
+
+	return (0);
+}
+
+int keyboard_close( struct file *filp )
+{
+	printk("keyboard_close()\n");
+
+	return (0);
+}
+
+
+static struct chrdev keyboard_device;
+
+static struct chrdrv keyboard_driver;
+
+struct file_operations keyboard_file_operation = 
+{
+	.f_open = keyboard_open,
+	.f_read = keyboard_read,
+	.f_lseek= keyboard_lseek,
+	.f_write= keyboard_write,
+	.f_mmap = keyboard_mmap,
+	.f_ioctl= keyboard_ioctl,
+	.f_close= keyboard_close
+};
+
+
+void keyboard_init(void)
+{
+	m_shift_l = 0;
+	m_shift_r = 0;
+	m_leading_e0 = 0;
+	k_queue.h = 0;
+	k_queue.t = 0;
+
+
+	strcpy ( keyboard_driver.driver_name, "keyboard" );
+	strcpy ( keyboard_device.dev_name, "keyboard" );
+	keyboard_driver.f_ops = &keyboard_file_operation;
+
+	chrdev_register( &keyboard_device, &keyboard_driver );
+
+	/**
+	 * Init the keyboard.
+     */
+    set_igate_descriptor(0x21, 3, _keyboard_irq);
+
+	outb(inb(0x21) & ~0x2, 0x21);
+	
+}
+
 
 
 

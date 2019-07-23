@@ -329,8 +329,26 @@ int main(void)
 }
 
 
+void show_error(unsigned long error_code)
+{
+    int _ret, _cflags;
 
+	printf("error=%08x\n", error_code);
 
+    __asm__ __volatile__ (
+		"xor  %%eax, %%eax\n\t"
+        "mov  $0x41, %%ah\n\t"
+        "mov  $0x55AA, %%bx\n\t"
+        "mov  $0x80,%%dl\n\t"
+        "int  $0x13\n\t"
+        :"=b"(_ret),"=a"(_cflags)
+        :
+        :
+    );
+	printf("_ret=%08x, c_flags=%08x\n",_ret, _cflags);
+
+	while(1);
+}
 
 
 

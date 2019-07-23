@@ -6,6 +6,8 @@
 #define O_RDWR              O_RD|O_WR
 #define O_CREAT                 4
 
+#define NOBLK                 	1
+
 #define SEEK_SET                0
 #define SEEK_CUR                1
 #define SEEK_END                2
@@ -23,6 +25,7 @@ static inline _syscall_0(unsigned int, get_ktime)
 static inline _syscall_1(unsigned int, execve, const char *, file_name)
 static inline _syscall_3(unsigned char*, mmap, int, fd,unsigned long, size, unsigned long, flags)
 static inline _syscall_3(int, ioctl, int, fd,unsigned long, cmd, unsigned long, arg)
+static inline _syscall_3(int,read,int,fd,char *,__buf, int, len)
 
 
 int printf(int fd,const char *fmt,...)
@@ -90,21 +93,18 @@ int main(void)
  	int i = 0;
 	int fd = 0;
 	int fb;	
+	int fd_keyboard;
 
-	#if 1
 	fb = open("/dev/fb",O_RDWR,0);
-	if ( ioctl(fb,IOCTL_FB_INFO,(int)&fb_info) < 0){
-		printf(fd,"ioctl failed\n");
-	}else{
-		lseek(fd,fb_info.xres*16+120,SEEK_SET);
-
-		printf(fd,"xres=%d, yres=%d\n", fb_info.xres, fb_info.yres);
-	}
-
-	lseek(fd,fb_info.xres*32+120,SEEK_SET);
+	ioctl(fb,IOCTL_FB_INFO,(int)&fb_info);
+	lseek(fd,fb_info.xres*16+720,SEEK_SET);
+	
+	printf(fd,"xres=%d, yres=%d\n", fb_info.xres, fb_info.yres);
+	
+	lseek(fd,fb_info.xres*32+720,SEEK_SET);
 	printf(fd,"Task sh is running, fb=%d\n", fb);
 	
-	lseek(fd,fb_info.xres*48+120,SEEK_SET);
+	lseek(fd,fb_info.xres*48+720,SEEK_SET);
 	
 	p_vram = (unsigned int*)mmap(fb,fb_info.xres*fb_info.yres*4,0);
 	if ( p_vram ){
@@ -112,14 +112,17 @@ int main(void)
 	}else{
 		printf(fd,"mmap failed\n");
 	}
-	#endif
+
+	fd_keyboard = open("/dev/keyboard", O_RD, NOBLK);
+
 	int x = fb_info.xres/2;
 	int y = (fb_info.yres/3)*2;
 	int color = 0;
+	int key;
 	
 	while(1)
 	{
-		// lseek(fd,fb_info.xres*64+120,SEEK_SET);
+		lseek(fd,fb_info.xres*64+720,SEEK_SET);
 		printf(fd,"Hello Loverly OS stack at %08x,i=%08d\n",(unsigned int)&i, i);
 		i++;
 
@@ -133,9 +136,26 @@ int main(void)
 		y %= fb_info.yres;
 		color += 10;
 
-		if ( i > 10 ){
+		if ( i > 30 ){
 			exit(0);
 		}
+#if 0
+		read(fd_keyboard,(char*)&key,1);
+		printf(fd,"key=%d", key);
+		switch ( key )
+		{
+		case 'J':
+			break;
+		case 'L':
+			break;
+		case 'I':
+			break;
+		case 'K':
+			break;
+		default:
+			break;
+		}
+#endif
 	}
 	
 	return (0);

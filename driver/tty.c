@@ -40,13 +40,13 @@ int tty_write( struct file *filp, const char *__buf, int len )
 	y = filp->w_o / kparam->yres;
 
 
-	printk("task[%d] tty_write len=%d, x=%d,y=%d\n", current->pid, len, x, y);	
+	// printk("task[%d] tty_write len=%d, x=%d,y=%d\n", current->pid, len, x, y);	
 
     while( __buf[i] != '\0' )
 	{
 		if ( __buf[i] == '\n'){
-			filp->w_o += kparam->xres-x;
-		    y += 16; x = 0;
+			filp->w_o += ((kparam->xres-x)+kparam->xres-x/2);
+		    y += 16; x = kparam->xres-x/2;
 		}else{
 	    	putchar(x, y, __buf[i], 0xFFFFFF, 0x101010);
 			x += 8;

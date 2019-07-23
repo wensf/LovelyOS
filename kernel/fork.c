@@ -166,10 +166,6 @@ int do_fork(unsigned long stack_start)
 
 	p->state  = TASK_RUNNING;
 	task[pid] = p;
-
-	// task_dump(p);
-
-	// printk("task[%d]->last_fd=%d\n", pid, p->last_fd);
 	
 	return pid;
 }

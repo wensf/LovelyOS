@@ -185,7 +185,7 @@ int ramfs_read( int fd, char *__buf, int len )
 	
 	if ( filp && filp->f_ops && filp->f_ops->f_read )
 	{
-		i = filp->f_ops->f_open(filp);
+		i = filp->f_ops->f_read(filp,__buf, len);
 	}
 	
 	return (i);

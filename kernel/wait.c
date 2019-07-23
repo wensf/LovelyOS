@@ -5,6 +5,7 @@
 #include <system.h>
 #include <syscall.h>
 #include <printk.h>
+#include <page.h>
 
 
 int do_wait(int *exit_code)
@@ -26,12 +27,14 @@ int do_wait(int *exit_code)
 	}
 
 	if ( i < SIZEOF_NR(task) ){
-//		m = current->mm.code_start;		// 释放任务的代码段，数据段，用户栈，内核栈.
+//		m = task[i]->mm.code_start;		// 释放任务的代码段，数据段，用户栈，内核栈.
 //		while ( m != NULL ){
 //			free_page(mm->code_start);
+//			m = m->next;
 //		}
-//		free_page(current->pgd);
-//		free_page(current);
+		free_page(task[i]->pgd);		// 页目录
+		free_page((uint32)task[i]);				// 内核栈
+		task[i] = 0;
 
 		current->signal &= ~(1<<0);
 

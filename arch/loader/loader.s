@@ -28,7 +28,7 @@
 LoadMessage:
 	.ascii "Loading          "
 	.ascii "Ready.           "
-	.ascii "Boot error       "
+	.ascii "Loading failed   "
 	.ascii "4GB Access failed"
 	/* .size LoadMessage, . - LoadMessage */
 
@@ -70,7 +70,6 @@ DispStrRealMode:
 	/* .size DispStrRealMode, . - DispStrRealMode */
 
 error:
-	mov     $2, %dh
 	call    DispStrRealMode
 	jmp     .
 
@@ -103,7 +102,7 @@ KillMotor:
 	reserved:
 		.byte 0x00
 	count:
-		.word 0x7f
+		.word 0x40
 	bufoffset:
 		.word 0x0000
 	bufseg:
@@ -133,6 +132,10 @@ load_kernel:
 	mov     $packet, %si
 	int     $0x13
 
+	// add 2019.07.22
+	pushw   $0	/* x */
+	pushw   $3 /* y */
+	pushw   $2 /* message index */
 	jc      error
 
 	pop     %si
@@ -155,7 +158,7 @@ load_kernel:
 	ramfs_reserved:
 		.byte 0x00
 	ramfs_count:
-		.word 0x7f
+		.word 0x40
 	ramfs_bufoffset:
 		.word 0x0000
 	ramfs_bufseg:
@@ -163,6 +166,8 @@ load_kernel:
 	ramfs_blockNum:
 	    .quad 0x00A1   /* read from sector number 161 */
 	/*.size packet, .-packet */		
+
+.global show_error
 
 .global load_ramfs	
 	/*.type load_ramfs, @function */
@@ -181,11 +186,16 @@ load_ramfs:
 	mov     $ramfs_packet, %si
 	int     $0x13
 
-	jc      error
-
+	// add 2019.7.22
+	pushw   $0	/* x */
+	pushw   $3 /* y */
+	pushw   $2 /* message index */
+//	jc      error
+	jc		show_err
+	
 	mov     $0x0, %esi
 	mov     $0x800000, %edi
-	mov     $64*1024, %ecx
+	mov     $32*1024, %ecx
 read:	
 	movl    %es:(%esi),%eax
 	movl    %eax, %fs:(%edi)
@@ -201,6 +211,11 @@ read:
 	pop     %bp	
 
 	ret
+
+show_err:
+	push  %eax
+	call   show_error
+	jmp	   .
 	
 	/* .size load_ramfs, .-load_ramfs */
 	
