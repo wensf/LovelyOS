@@ -48,6 +48,9 @@ void kernel_panic ( int cpl, unsigned long esp )
 	
 }
 
+void set_color( int bcolor, int fcolor );
+
+
 void kernel_die(const char*fmt,...)
 {
 	char buf[256];
@@ -57,6 +60,7 @@ void kernel_die(const char*fmt,...)
 	vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
 
+	set_color(0xFF0000,0x0);
 	printk("OSLover_Die: ");
 	printk(buf);
 

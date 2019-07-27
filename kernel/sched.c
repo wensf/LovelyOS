@@ -88,7 +88,7 @@ void task_dump(struct task_struct *task)
 	printk("signal=%08x\n",task->signal);
 	printk("exit_code=%08x\n",task->exit_code);
 	printk("last_fd=%08x\n",task->last_fd);
-	printk("pgd=0x%08x\n", task->pgd);
+	printk("pg_dir=0x%08x\n", task->pg_dir);
 	printk("mm.stack_start=0x%08x\n",task->mm.stack_start);
 }
 
@@ -138,14 +138,14 @@ void sched_init(void)
 	task[0]->thread.esp0 = struct_tcb + KERNEL_STACK_PAGES*PAGE_SIZE -4;
 	task[0]->thread.ss   = SELECTOR_USER_DATA;
 	struct vmb *vm = (struct vmb *)slab_alloc(sizeof(struct vmb));
-	vm->vaddr = task_idle_user_stk;//get_free_pages(USER_STACK_PAGES);
+	vm->vaddr = (uint32)task_idle_user_stk;
 	vm->count = 0;
 	vm->length = PAGE_SIZE;
 	vm->next = 0;
 	vm->attrs = P_P|P_US|P_RW;
 	task[0]->mm.stack_start = vm;
 	task[0]->thread.esp  = vm->vaddr + USER_STACK_SIZE - 4;
-	task[0]->pgd = KERNEL_PAGE_DIR_ADDR; // kernel page directory initiazied at kernel.S setup_paging()
+	task[0]->pg_dir = KERNEL_PAGE_DIR_ADDR; // kernel page directory initiazied at kernel.S setup_paging()
 	task[0]->parent = 0;
 	task[0]->prev = task[0];
 	task[0]->next = task[0];
@@ -222,34 +222,14 @@ void schedule(void)
 	struct task_struct *prev;
 	static int i = 0;
 	unsigned long eflags;
-	int nr, k;
 
 	_local_irq_save(eflags);
 
-#if 0
-	nr = sizeof(task)/sizeof(task[0]);
-    k = 0;
-
-    do{
-        i++;
-        i %= nr;
-        i = (i==0)?(1):(i);
-        k++;
-    }while ( (!task[i] ) || ((task[i]->state != TASK_RUNNING) && (k < nr)) );
-
-    if ( k == nr )
-    {
-        i = 0;
-    }
-
-#else
-
+	// find next task
 	do{
-		i++; i %= 4;
+		i++; i %= SIZEOF_NR(task);
 	}while(!task[i] || task[i]->state != TASK_RUNNING);
-#endif
 
-#if 1
 	if ( (current == task[i]) || !task[i] )
 	{
 		_local_irq_restore(eflags);
@@ -259,24 +239,27 @@ void schedule(void)
  	next     = task[i];
 	prev     = current;
 	current  = next;
-#endif
 
-#if 1
+	// switch task pg_dir
+	
 	__asm__ __volatile__(\
 			"movl %0,%%eax\n\t"\
 			"movl %%eax, %%cr3\n\t"
 			:\
-			:"g"(current->pgd)\
+			:"g"(current->pg_dir)\
 			:"eax"\
 			);
-#endif
-	
-//	draw_text(1920/2,0,"-%d-",i);	
+	// switch kernel stack
 	tss.esp0 = next->thread.esp0;
 	_local_irq_restore(eflags);
     switch_to(prev, next, last);
 	
 }
+
+
+
+
+
 
 
 

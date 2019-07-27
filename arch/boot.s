@@ -87,7 +87,7 @@ read_loader:
 
 	mov     $0x02, %ah	/* BIOS function number */
 	mov     $0x20, %al	/* number of sector to read (32 secotors)*/
-	mov     $0x00, %ch	/* number of trunk */
+	mov     $0x00, %ch	/* number of cylinder */
 	mov     $0x02, %cl	/* number of start secotr (from 1)*/
 	mov     $0x00, %dh	/* number of header */
 	mov     $0x80, %dl	/* number of driver */

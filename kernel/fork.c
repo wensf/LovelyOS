@@ -5,12 +5,11 @@
 #include <page.h>
 #include <slab.h>
 #include <traps.h>
+#include <system.h>
 
 extern void ret_from_fork(void);
 
 int printk(const char *fmt, ...);
-
-static int last_pid;
 
 void reg_copy(void *to, void *from, int cnt)
 {
@@ -41,8 +40,8 @@ void mm_copy(const struct task_struct *old, struct task_struct *new)
 {
 	uint32 *pgd_old, *pgd_new;
 
-	pgd_old = (uint32 *)old->pgd;
-	pgd_new = (uint32 *)new->pgd;
+	pgd_old = (uint32 *)old->pg_dir;
+	pgd_new = (uint32 *)new->pg_dir;
 
 	printk("parent pgd %08x,child pgd %08x\n",(uint32)pgd_old,(uint32)pgd_new);
 	
@@ -57,6 +56,16 @@ void mm_copy(const struct task_struct *old, struct task_struct *new)
 		pgd_new[i] = pgd_old[i];	
 	//	printk("%d,%08x,%08x\n",i,pgd_new[i],pgd_old[i]);
 	}
+}
+
+int get_last_pid(void)
+{
+	for ( int i = 0; i < SIZEOF_NR(task); i++ ){
+		if ( !task[i] ){
+			return (i);
+		}
+	}
+	return (-1);
 }
 
 /**
@@ -78,7 +87,7 @@ int do_fork(unsigned long stack_start)
 	
 	p = (struct task_struct *)get_free_pages(KERNEL_STACK_PAGES);
 	*p = *current;
-	pid = ++last_pid;
+	pid = get_last_pid();
 
 	printk("struct_tcb[%d]=%08x, task[%d] fork():\n", pid, (uint32)p, current->pid);
 	
@@ -115,11 +124,11 @@ int do_fork(unsigned long stack_start)
  	for ( int i = 0; i < USER_STACK_PAGES; i++ )
 	{
 		unsigned long vaddr = current->mm.stack_start->vaddr+i*PAGE_SIZE;
-		if (page_attrs_set(current->pgd,vaddr,P_P|P_US) != 0 )
+		if (page_attrs_set(current->pg_dir,vaddr,P_P|P_US) != 0 )
 		{
 			kernel_die("page_attrs_set [0x%08x] failed\n", vaddr);
 		}else{
-			printk("page_attrs_set [0x%08x] to 0x%08x\n", vaddr, P_P|P_US);	
+		//	printk("page_attrs_set [0x%08x] to 0x%08x\n", vaddr, P_P|P_US);	
 		}	
 		#if 1
 		if ( vaddr >= low_memory_start ){
@@ -130,8 +139,8 @@ int do_fork(unsigned long stack_start)
 	#endif
 
 	/* 为子进程分配页目录,并复制父进程的页表项 */
-	p->pgd = get_free_page();
-	if ( !p->pgd ){
+	p->pg_dir = get_free_page();
+	if ( !p->pg_dir ){
 		kernel_die("fork() get_free_page failed\n");
 	}
 	mm_copy(current, p);		

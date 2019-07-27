@@ -284,7 +284,7 @@ int main(void)
 	printf("%d block memory found in tatal\n", kparam->mem_cnt);
 
 	printf("Press any key to init the evsa\n");
-	#if 1
+	#if 0
 	get_key(0);
 	#endif
 	
@@ -305,7 +305,7 @@ int main(void)
 		printf("supported x=%d,y=%d, bit_per_pixel=%d mode=%04x video_addr=%08x\n",
 			kparam->xres,kparam->yres,kparam->bpp,kparam->vesa_mode,kparam->vaddr);
 		printf("Press any key to boot kernel");
-		get_key(0);
+		// get_key(0);
 		clear_screen();
 		
 		return 0;	
@@ -346,6 +346,17 @@ void show_error(unsigned long error_code)
         :
     );
 	printf("_ret=%08x, c_flags=%08x\n",_ret, _cflags);
+
+	__asm__ __volatile__(
+		"xor  %%eax,%%eax\n\t"
+		"mov  $0x08,%%ah\n\t"
+		"mov  $0x80,%%dl\n\t"
+		"int  $0x13\n\t"
+		:"=c"(_ret),"=d"(_cflags)
+		:
+	);
+	printf("_ret=%08x,c_flags=%08x\n",_ret,_cflags);
+	
 
 	while(1);
 }

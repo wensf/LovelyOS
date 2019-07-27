@@ -32,8 +32,8 @@ int do_wait(int *exit_code)
 //			free_page(mm->code_start);
 //			m = m->next;
 //		}
-		free_page(task[i]->pgd);		// 页目录
-		free_page((uint32)task[i]);				// 内核栈
+		free_page(task[i]->pg_dir);		// 页目录
+		free_page((uint32)task[i]);		// 内核栈
 		task[i] = 0;
 
 		current->signal &= ~(1<<0);

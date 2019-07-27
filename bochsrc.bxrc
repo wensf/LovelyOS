@@ -6,8 +6,8 @@
 # gdbstub:enabled=1,port=1234
 
 
-
 megs: 32
+cpu: ips=1000000
 
 # filename of ROM images
 romimage: file=/usr/local/share/bochs/BIOS-bochs-latest

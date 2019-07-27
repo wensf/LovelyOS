@@ -13,6 +13,8 @@
 #define MEM_USED  1
 
 
+// #define PAGE_DEBUG_ENABLE					0
+
 extern void page_init(void);
 extern int page_map( uint32 pgd,uint32 pa, uint32 va, int size, int attr );
 extern int page_attrs_set( uint32 pgd, uint32 va, int attrs );

@@ -102,7 +102,7 @@ struct task_struct
 	int file_counter[FSAL_MAX_OPENED_FILE];
 	unsigned long signal;
 	int exit_code;
-	unsigned int pgd;
+	unsigned int pg_dir;
 	struct mm_struct mm;
 	int last_fd;
 	struct task_struct *parent;

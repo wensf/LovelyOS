@@ -119,6 +119,8 @@ int main(void)
 	int y = (fb_info.yres/3)*2;
 	int color = 0;
 	int key;
+
+	*((unsigned char *)(0x90000000)) = 0x0;
 	
 	while(1)
 	{

@@ -16,6 +16,13 @@ unsigned char mem_map[PAGING_MEM_ITEM];
 unsigned long low_memory_start, low_memory_end;
 
 
+#if defined(PAGE_DEBUG_ENABLE)
+	#define page_debug_printk printk
+#else
+	#define page_debug_printk
+#endif
+
+
 int do_page_map ( uint32 pgd, uint32 pa, uint32 va, int attr );
 
 int page_attrs_set( uint32 pgd, uint32 va, int attrs )
@@ -37,16 +44,14 @@ int page_attrs_set( uint32 pgd, uint32 va, int attrs )
 	*(ptable+ppte_entry) |=  attrs;
 
 	// update cr3
-#if 1
 	__asm__ __volatile__("movl %%eax,%%cr3"::"a" (pgd));
-#endif	
 
 	return 0;
 }
 
-int do_page_map ( uint32 pgd, uint32 pa, uint32 va, int attr )
+int do_page_map ( uint32 pg_dir, uint32 pa, uint32 va, int attr )
 {
-	uint32 *pdir = (uint32 *)pgd;
+	uint32 *pdir = (uint32 *)pg_dir;
 	uint32 *ptable;
 
 	uint32 pdir_entry = va >> 22;
@@ -62,29 +67,24 @@ int do_page_map ( uint32 pgd, uint32 pa, uint32 va, int attr )
 	}
 
 	*(ptable+ppte_entry) = (pa & 0xFFFFF000) + attr;
-
-#if 0
 	if ( current ){
-		printk("pgd=%08x,dir=[%d],pte=[%d],pa=%08x,va=%08x\n",pgd, pdir_entry,ppte_entry,pa,va);
+		page_debug_printk("pgd=%08x,dir=[%d],pte=[%d],pa=%08x,va=%08x\n",pg_dir, pdir_entry,ppte_entry,pa,va);
 	}
-#endif
 
 	// update cr3
-#if 1
-	__asm__ __volatile__("movl %%eax,%%cr3"::"a" (pgd));
-#endif		
+	__asm__ __volatile__("movl %%eax,%%cr3"::"a" (pg_dir));
 
 	return (0);
 }
 
 
-int page_map( uint32 pgd, uint32 pa, uint32 va, int size, int attr )
+int page_map( uint32 pg_dir, uint32 pa, uint32 va, int size, int attr )
 {
 	if ( size < 4096 ) size = 4096;
 	
 	for ( int i = 0; i < size/4096; i++ )
 	{
-		do_page_map( pgd, pa+i*4096, va+i*4096, attr );
+		do_page_map( pg_dir, pa+i*4096, va+i*4096, attr );
 	}	
 	
 	return 0;
@@ -94,13 +94,13 @@ int do_wp_page(uint32 error_code,uint32 addr)
 {
 	unsigned long old_page, new_page;
 	
-	printk("task[%d] do_wp_page() addr = 0x%08x, error_code=0x%08x\n",current->pid,addr, error_code);
+	page_debug_printk("task[%d] do_wp_page() addr = 0x%08x, error_code=0x%08x\n",current->pid,addr, error_code);
 
 	old_page = addr & 0xFFFFF000;
 	if ( old_page>=low_memory_start && mem_map[MAP_NR(addr)] == 1 )
 	{	
-		printk("set old page 0x%08x to [rw]\n", old_page);
-		return page_attrs_set( current->pgd, old_page, P_P|P_US|P_RW);
+		page_debug_printk("set old page 0x%08x to [rw]\n", old_page);
+		return page_attrs_set( current->pg_dir, old_page, P_P|P_US|P_RW);
 	}
 	new_page = get_free_page();
 	if ( !new_page ){
@@ -110,9 +110,9 @@ int do_wp_page(uint32 error_code,uint32 addr)
 	if ( new_page >= low_memory_start ){
 		mem_map[MAP_NR(new_page)]--;
 	}
-	printk("map new page 0x%08x to 0x%08x, [rw]\n",new_page,old_page);
-	do_page_map ( current->pgd, new_page, old_page, P_P|P_RW|P_US );	
-	__asm__ __volatile__("movl %%eax,%%cr3"::"a" (current->pgd));
+	page_debug_printk("map new page 0x%08x to 0x%08x, [rw]\n",new_page,old_page);
+	do_page_map ( current->pg_dir, new_page, old_page, P_P|P_RW|P_US );	
+	__asm__ __volatile__("movl %%eax,%%cr3"::"a" (current->pg_dir));
 
 	return (0);
 }
@@ -122,7 +122,7 @@ int bread_page(  char *b, unsigned long addr, unsigned long size )
 {
 	unsigned long offset = 0x800000+0*512; // 程序入口在偏移0*512处
 	offset = offset + (addr - 0x2000000);
-	printk("copy text segment from ram_disk offset 0x%08x\n", offset);
+	page_debug_printk("copy text segment from ram_disk offset 0x%08x\n", offset);
 	memcpy(b,( unsigned char *)offset,PAGE_SIZE);
 			
 	return (0);
@@ -132,7 +132,7 @@ int do_no_page(uint32 error_code,uint32 addr)
 {
 	unsigned long old_page, new_page;
 
-	printk("task[%d] do_no_page() addr = 0x%08x, error_code=0x%08x\n",current->pid,addr, error_code);	
+	page_debug_printk("task[%d] do_no_page() addr = 0x%08x, error_code=0x%08x\n",current->pid,addr, error_code);	
 
 	old_page = addr & 0xFFFFF000;
 	new_page = get_free_page();
@@ -142,18 +142,18 @@ int do_no_page(uint32 error_code,uint32 addr)
 	if ( old_page >= 0x02000000 && old_page < 0x04000000 )
 	{
 		// text & rodata & data
-		printk("text & rodata & data\n");
+		page_debug_printk("text & rodata & data\n");
 
 		bread_page((char*)new_page,old_page,PAGE_SIZE);
 		
 	}else if ( old_page >= 0x04000000 && old_page < 0x08000000){
 		// stack
-		printk("stack\n");
+		page_debug_printk("stack\n");
 	}else{
 	//	task_dump(current);
-	//	kernel_die("error address");
+		kernel_die("segment fault at 0x%08x\n", addr);
 	}
-	do_page_map ( current->pgd, new_page, old_page, P_P|P_RW|P_US );
+	do_page_map ( current->pg_dir, new_page, old_page, P_P|P_RW|P_US );
 
 	return (0);
 }
@@ -265,6 +265,7 @@ unsigned long get_free_pages( int page_nr )
 //		printk("alloc page start %08x, page_nr=%d\n", MEM_LOW + (pidx* 4096), page_nr);
 		return low_memory_start + (pidx* 4096);
 	}else{
+		kernel_die("get_free_pages() oom!!!!\n");
 		return (0);
 	}
 }

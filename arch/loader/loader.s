@@ -26,10 +26,11 @@
 /*    .def LoadMessage; .scl 2; .type 16;
     .endef */
 LoadMessage:
-	.ascii "Loading          "
+	.ascii "Loading kernel..."
 	.ascii "Ready.           "
 	.ascii "Loading failed   "
 	.ascii "4GB Access failed"
+	.ascii "Loading ramfs... "
 	/* .size LoadMessage, . - LoadMessage */
 
 .global DispStrRealMode /* void DispStrRealMode(short x, short y, short string_idx) */
@@ -72,20 +73,6 @@ DispStrRealMode:
 error:
 	call    DispStrRealMode
 	jmp     .
-
-.global KillMotor
-	/*.type KillMotor, @function */
-	/*.def KillMotor; .scl 2; .type 16;
-	.endef*/
-KillMotor:
-	pushw	%dx
-	movw	$0x03F2, %dx
-	movb	$0, %al
-	out     %al, %dx
-	pop     %dx
-
-	ret
-	/*.size KillMotor, . - KillMotor */
 	
 /**
  * LBA address packet information for extends INT 0x13
@@ -102,7 +89,7 @@ KillMotor:
 	reserved:
 		.byte 0x00
 	count:
-		.word 0x40
+		.word 0x7f
 	bufoffset:
 		.word 0x0000
 	bufseg:
@@ -132,11 +119,14 @@ load_kernel:
 	mov     $packet, %si
 	int     $0x13
 
-	// add 2019.07.22
-	pushw   $0	/* x */
-	pushw   $3 /* y */
-	pushw   $2 /* message index */
-	jc      error
+	jc      load_kernel_int13
+
+done:
+	pushw   $0 /* x */
+	pushw   $5 /* y */
+	pushw   $1 /* message index */
+	call	DispStrRealMode
+	add     $6, %esp
 
 	pop     %si
 	pop     %di
@@ -145,6 +135,34 @@ load_kernel:
 	pop     %bp	
 
 	ret
+
+
+.global load_kernel_int13
+load_kernel_int13:
+	push	%bx
+	push	%di
+	push	%si
+	push	%bp
+	mov		%sp, %bp
+
+	mov     $0x02, %ah	/* BIOS function number */
+	mov     $0x20, %al	/* number of sector to read (80 secotors)*/
+	mov     $0x00, %ch	/* number of cylinder */
+	mov     $0x21, %cl	/* number of start secotr (from 1)*/
+	mov     $0x00, %dh	/* number of header */
+	mov     $0x80, %dl	/* number of driver */
+	int     $0x13		/* call BIOS INT 13H*/
+
+	jc      error
+
+	mov     %bp, %sp
+	pop     %bp
+	pop     %si
+	pop     %di
+	pop     %bx
+
+	jmp		done
+
 
 	/* .size load_kernel, .-load_kernel */
 	
@@ -158,7 +176,7 @@ load_kernel:
 	ramfs_reserved:
 		.byte 0x00
 	ramfs_count:
-		.word 0x40
+		.word 0x7f
 	ramfs_bufoffset:
 		.word 0x0000
 	ramfs_bufseg:
@@ -186,16 +204,13 @@ load_ramfs:
 	mov     $ramfs_packet, %si
 	int     $0x13
 
-	// add 2019.7.22
-	pushw   $0	/* x */
-	pushw   $3 /* y */
-	pushw   $2 /* message index */
+
 //	jc      error
 	jc		show_err
 	
 	mov     $0x0, %esi
 	mov     $0x800000, %edi
-	mov     $32*1024, %ecx
+	mov     $64*1024, %ecx
 read:	
 	movl    %es:(%esi),%eax
 	movl    %eax, %fs:(%edi)
@@ -203,6 +218,13 @@ read:
 	addl    $4, %edi
 	subl    $4, %ecx
 	jnz     read
+
+
+	pushw   $0 /* x */
+	pushw   $3 /* y */
+	pushw   $1 /* message index */
+	call	DispStrRealMode
+	add     $6, %esp
 
 	pop     %si
 	pop     %di
@@ -232,23 +254,31 @@ _start:
 	mov     %ax, %gs
 	mov     %ax, %ss
 
+	/* set cpu to protected mode */
 	call	entry_protected_mode_temporary
 	call    access_4gb_ram_test
-
+	
 	call    main
 
-	/* show a message : Loading... */
+	/* show a message : Loading ramfs... */
 	pushw   $0 /* x */
 	pushw   $2 /* y */
-	pushw   $0 /* index in  string array */
+	pushw   $4 /* index in  string array */
 	call	DispStrRealMode
 	addw    $0x6, %sp
-
-	/** load the fatfs to 0x00800000(8MB) as ramfs */
+	
+	/* load the fatfs to 0x00800000(8MB) as ramfs */
 	mov		$0x4000, %ax
 	mov		%ax, %es
 	xor		%bx, %bx
 	call 	load_ramfs
+
+	/* show a message : Loading kernel... */
+	pushw   $0 /* x */
+	pushw   $4 /* y */
+	pushw   $0 /* index in  string array */
+	call	DispStrRealMode
+	addw    $0x6, %sp
 
 	/* load the kernel to 0x4000:0x0000 */
 	mov		$0x4000, %ax
@@ -256,21 +286,12 @@ _start:
 	xor		%bx, %bx
 	call	load_kernel
 
-	call	KillMotor
-
-	/* show a message : Ready... */
-	pushw   $0 /* x */
-	pushw   $4 /* y */
-	pushw   $1 /* index in  string array */
-	call	DispStrRealMode
-	addw    $0x6, %sp
-	
 	/* let gs point to the display-ram address */
 	movw	$0xB800, %ax
 	movw	%ax, %gs
 
 	/* set video to graphics mode */
-
+	
 	call	set_video
 
 	jmp     _Entry_protected_mode
