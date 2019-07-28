@@ -5,6 +5,7 @@
 #include <types.h>
 #include <sched.h>
 #include <printk.h>
+#include <system.h>
 
 struct struct_filesystem ramfs = 
 {
@@ -77,6 +78,10 @@ struct file* file_alloc(void)
 	static struct file file_table[8];
 	static int file_last = 0;
 
+	if ( file_last >= SIZEOF_NR(file_table)){
+		kernel_die("file_alloc() oom!!!");
+	}
+
 	return &file_table[file_last++];
 }
 
@@ -111,17 +116,15 @@ int get_fs_string(char *dstr,const char *sstr)
 int ramfs_open( const char *path, int mode, int flags )
 {
 	struct file *filp;
+	ram_file *ram_filp;
 	int32 f_id;
 
-//	char file_name[MAX_NAME];
-//	get_fs_string(file_name,path);
-	
-//	printk("in ramfs_open addr=%08x,path=%s, mode=%d, flags=%d\n",(uint32)path,path,mode,flags);
-	
-	f_id = ramfile_fid_find((const int8*)path);
+	printk("in ramfs_open addr=0x%08x,path=%s, mode=%d, flags=%d, sp=0x%08x\n",(uint32)path,(uint32)path,mode,flags,&f_id);
+
+	f_id = ramfile_fid_find(path);
 	if ( (f_id < 0) && !(mode & O_CREAT) )
 	{	
-		kernel_die("task[%d] not found at %08x -> %s\n", current->pid,(uint32)path,path);
+		kernel_die("task[%d] not found at 0x%08x -> %s, mode=%d, flags=%d, sp=0x%08x\n", current->pid,(uint32)path,(uint32)path, mode, flags, &f_id);
 		return (-1);
 	}
 
@@ -138,14 +141,12 @@ int ramfs_open( const char *path, int mode, int flags )
 	}
 	#endif
 		
-	ram_file *ram_filp;
-	
 	ram_filp = &ram_files[f_id];
 	
 	filp = file_alloc();
 	if ( !filp )
 	{
-		kernel_die("task[%d] ram_files at %08x ram_filp=%08x, f_open=%08x\n",current->pid,(uint32)&ram_files,ram_filp->f_ops,ram_filp->f_ops->f_open);
+		kernel_die("task[%d] ram_files at 0x%08x ram_filp=%08x, f_open=%08x\n",current->pid,(uint32)&ram_files,ram_filp->f_ops,ram_filp->f_ops->f_open);
 		return (-1);
 	}
 	
@@ -161,7 +162,7 @@ int ramfs_open( const char *path, int mode, int flags )
 		return (-1);
 	}
 
-//	printk("ramfs_open %s,ram_files at %08x ram_filp=%08x, f_open=%08x\n",path,(uint32)&ram_files,ram_filp->f_ops,ram_filp->f_ops->f_open);	
+	printk("ramfs_open %s,ram_files at 0x%08x ram_filp=%08x, f_open=%08x\n",(uint32)path,(uint32)&ram_files,ram_filp->f_ops,ram_filp->f_ops->f_open);	
 	
 	current->file[last_unused] = filp;
 	current->file_counter[last_unused]++;

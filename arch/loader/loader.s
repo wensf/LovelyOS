@@ -209,7 +209,7 @@ load_ramfs:
 	jc		show_err
 	
 	mov     $0x0, %esi
-	mov     $0x800000, %edi
+	mov     $0x700000, %edi
 	mov     $64*1024, %ecx
 read:	
 	movl    %es:(%esi),%eax
@@ -267,7 +267,7 @@ _start:
 	call	DispStrRealMode
 	addw    $0x6, %sp
 	
-	/* load the fatfs to 0x00800000(8MB) as ramfs */
+	/* load the fatfs to 0x00700000(7MB) as ramfs */
 	mov		$0x4000, %ax
 	mov		%ax, %es
 	xor		%bx, %bx
@@ -291,7 +291,7 @@ _start:
 	movw	%ax, %gs
 
 	/* set video to graphics mode */
-	
+
 	call	set_video
 
 	jmp     _Entry_protected_mode
@@ -429,16 +429,16 @@ _setup32:
 	mov     $0x0, %ax
 	cld
 kernel_move:		/* ds:si --> es:di size-->64KB */
-					/* 0x10:00040000 -> 0x10:0x00108000 */
+					/* 0x10:00040000 -> 0x10:0x00106000 */
 	mov     $0x00040000, %esi
-	mov     $0x00108000, %edi
+	mov     $0x00106000, %edi
 	mov     $64*1024, %ecx
 	rep
 	movsl
 	/* Do a simple check */
 	movl    $64*1024, %ecx
 	movl    $0x040000, %esi
-	movl    $0x108000, %edi
+	movl    $0x106000, %edi
 
 loop:
 	mov     (%esi), %eax
@@ -462,7 +462,7 @@ _equal:
 	 * Ok, we will entry 32-bit protected mode
 	 * so, say good bye to real-mode
 	 */
-	jmpl	$0x08, $0x00108000
+	jmpl	$0x08, $0x00106000
 
 _not_equal:
 
@@ -470,7 +470,6 @@ _not_equal:
 	pushl	$11
 	pushl	$0
 	call	_putc
-	jmp		.
 
 	ret
 

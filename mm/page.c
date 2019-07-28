@@ -68,7 +68,7 @@ int do_page_map ( uint32 pg_dir, uint32 pa, uint32 va, int attr )
 
 	*(ptable+ppte_entry) = (pa & 0xFFFFF000) + attr;
 	if ( current ){
-		page_debug_printk("pgd=%08x,dir=[%d],pte=[%d],pa=%08x,va=%08x\n",pg_dir, pdir_entry,ppte_entry,pa,va);
+	//	page_debug_printk("pgd=%08x,dir=[%d],pte=[%d],pa=%08x,va=%08x\n",pg_dir, pdir_entry,ppte_entry,pa,va);
 	}
 
 	// update cr3
@@ -97,9 +97,10 @@ int do_wp_page(uint32 error_code,uint32 addr)
 	page_debug_printk("task[%d] do_wp_page() addr = 0x%08x, error_code=0x%08x\n",current->pid,addr, error_code);
 
 	old_page = addr & 0xFFFFF000;
-	if ( old_page>=low_memory_start && mem_map[MAP_NR(addr)] == 1 )
+	if ( old_page>= PA2VA(low_memory_start) && mem_map[MAP_NR(addr)] == 1 )
 	{	
-		page_debug_printk("set old page 0x%08x to [rw]\n", old_page);
+		page_debug_printk("low_memory_start=0x%08x\n", low_memory_start);
+		page_debug_printk("set old page 0x%08x to [rw] mem_map[%d]=%d\n", old_page, MAP_NR(addr),mem_map[MAP_NR(addr)]);
 		return page_attrs_set( current->pg_dir, old_page, P_P|P_US|P_RW);
 	}
 	new_page = get_free_page();
@@ -107,7 +108,7 @@ int do_wp_page(uint32 error_code,uint32 addr)
 		kernel_die("do_wp_page");
 	}
 	memcpy((char*)new_page, (char*)old_page, PAGE_SIZE);
-	if ( new_page >= low_memory_start ){
+	if ( new_page >= PA2VA(low_memory_start) ){
 		mem_map[MAP_NR(new_page)]--;
 	}
 	page_debug_printk("map new page 0x%08x to 0x%08x, [rw]\n",new_page,old_page);
@@ -120,7 +121,7 @@ int do_wp_page(uint32 error_code,uint32 addr)
 
 int bread_page(  char *b, unsigned long addr, unsigned long size )
 {
-	unsigned long offset = 0x800000+0*512; // 程序入口在偏移0*512处
+	unsigned long offset = RAM_DISK_PADDR+0*512; // 程序入口在偏移0*512处
 	offset = offset + (addr - 0x2000000);
 	page_debug_printk("copy text segment from ram_disk offset 0x%08x\n", offset);
 	memcpy(b,( unsigned char *)offset,PAGE_SIZE);
@@ -151,7 +152,8 @@ int do_no_page(uint32 error_code,uint32 addr)
 		page_debug_printk("stack\n");
 	}else{
 	//	task_dump(current);
-		kernel_die("segment fault at 0x%08x\n", addr);
+	//	kernel_die("segment fault at 0x%08x\n", addr);
+		printk("segment fault at 0x%08x\n", addr);
 	}
 	do_page_map ( current->pg_dir, new_page, old_page, P_P|P_RW|P_US );
 

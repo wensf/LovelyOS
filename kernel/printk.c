@@ -15,14 +15,19 @@ void set_color( int bcolor, int fcolor )
 	f_color = fcolor;
 }
 
+
+char buf[MAX_BUF_LEN];
+
+
 int printk(const char *fmt,...)
 {
-	char buf[256];
-	va_list ap;
+	va_list args;
+
+	memset(buf,0,sizeof(MAX_BUF_LEN));
 	
-	va_start(ap, fmt);
-	vsnprintf(buf, sizeof(buf), fmt, ap);
-	va_end(ap);
+	va_start(args, fmt);
+	vsnprintf(buf, sizeof(buf), fmt, args);
+	va_end(args);
 
     int i = 0;
 

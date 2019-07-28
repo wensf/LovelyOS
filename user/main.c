@@ -120,7 +120,7 @@ int main(void)
 	int color = 0;
 	int key;
 
-	*((unsigned char *)(0x90000000)) = 0x0;
+//	*((unsigned char *)(0x90000000)) = 0x0;
 	
 	while(1)
 	{

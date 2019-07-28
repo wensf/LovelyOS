@@ -9,6 +9,10 @@
 
 #include <stdarg.h>
 
+
+#define MAX_BUF_LEN   1024
+
+
 extern int vsnprintf(char *buf, int buf_len, const char *fmt, va_list ap);
 extern int sprintf(char *buf, const char *fmt,...);
 extern int strlen(const char *s);

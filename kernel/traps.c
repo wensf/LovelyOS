@@ -11,7 +11,6 @@ extern void _operation_fault(int cpl, unsigned long esp);
 extern void _page_fault(int cpl, unsigned long esp);
 extern void _parallel_interrupt(int cpl, unsigned long esp);
 
-extern struct gate_desc idt[]; /* IDT define at kernel/kernel.s */
 
 void kernel_panic ( int cpl, unsigned long esp )
 {
@@ -107,7 +106,6 @@ void parallel_interrupt(int cpl, unsigned long esp)
 	printk("parallel_interrupt\n");
 	kernel_panic(cpl, esp);
 }
-
 
 void trap_init( void )
 {

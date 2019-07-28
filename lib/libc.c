@@ -5,8 +5,8 @@
  * last modified : 2015.9.15
  */
 #include <stdarg.h>
+#include <libc.h>
 
-#define MAX_BUF_LEN   128
 #define ZEROPAD       0
 #define SPACEPAD      1
 
@@ -400,17 +400,17 @@ int padden(char **str,int count,int field_width,int flags)
  * fmt format string.
  * ap : variable string.
  */
+
+char tmp[MAX_BUF_LEN]; 
+
 int vsnprintf(char *buf, int buf_len, const char *fmt, va_list ap)
 {
-	char tmp[MAX_BUF_LEN];
-	char *str,/**end,*/c;
+	char *str;
+	char c;
 	int  i,flags,field_width,count;
 
-	str = tmp;
-	//end = buf + buf_len - 1;
-
-	for(; *fmt != '\0'; fmt++){
-
+	for ( ; *fmt != '\0'; fmt++ )
+	{
 		count = 0;
 
 		if(*fmt != '%'){
@@ -444,6 +444,8 @@ int vsnprintf(char *buf, int buf_len, const char *fmt, va_list ap)
 		if(is_digit(*fmt)){
 			field_width = skip_atoi(&fmt);
 		}
+		
+		str = tmp;
 
 		/* get a specific varible from fmt. */
 		switch(*fmt){
@@ -511,3 +513,5 @@ int sprintf(char *buf, const char *fmt,...)
 
 	return fmt_len;
 }
+
+

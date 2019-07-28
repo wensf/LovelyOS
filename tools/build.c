@@ -13,11 +13,12 @@
  
 #define MBR_SECTOR_NR      1
 #define LOADER_SECTOR_NR  32
-#define KERNEL_SECTOR_NR 128
+#define START_SECTOR_NR   16
+#define KERNEL_SECTOR_NR 112
 #define SHELL_SECTOR_NR   32
 #define LOGO_SECTOR_NR    92
 
-#define SECTOR_NR (MBR_SECTOR_NR+LOADER_SECTOR_NR+KERNEL_SECTOR_NR+SHELL_SECTOR_NR+LOGO_SECTOR_NR)
+#define SECTOR_NR (MBR_SECTOR_NR+LOADER_SECTOR_NR+START_SECTOR_NR+KERNEL_SECTOR_NR+SHELL_SECTOR_NR+LOGO_SECTOR_NR)
 
 
 int get_file_size(const char *path)
@@ -39,9 +40,9 @@ int main( int argc, char **argv )
 	int cnt;
 	int offset;
 
- 	if ( argc != 7 ){
+ 	if ( argc != 8 ){
 
-        printf("Usage : ./build xxx.img mbr.bin loader.bin kernel.bin logo.bin sh.bin\n");
+        printf("Usage : ./build xxx.img mbr.bin loader.bin start.bin kernel.bin logo.bin sh.bin\n");
         exit(1);
     }
 
@@ -88,56 +89,74 @@ int main( int argc, char **argv )
 	printf("read %s %d byte(s)\n", argv[3], cnt);
 	printf("write offset at %08x\n",offset);
 
-	// 读取kernel.bin，    写入扇区: 0x00004200, 扇区数: KERNEL_SECTOR_NR 
+
+	// 读取start.bin,  写入扇区:        0x00004200,扇区数: START_SECTOR_NR
 	fp = fopen( argv[4], "rb");
 	if ( !fp ){
 		perror("fopen");
 		goto error;
 	}
-
 	offset = (MBR_SECTOR_NR+LOADER_SECTOR_NR)*512;
+	cnt = fread(fptr+offset,1,START_SECTOR_NR*512,fp);
+	if ( cnt < 0 ){
+		perror("fread");
+		goto error;
+	}
+	fclose(fp);
+	printf("read %s %d byte(s)\n", argv[4], cnt);
+	printf("write offset at %08x\n",offset);
+	
+
+	// 读取kernel.bin，    写入扇区: 0x00006200, 扇区数: KERNEL_SECTOR_NR 
+	fp = fopen( argv[5], "rb");
+	if ( !fp ){
+		perror("fopen");
+		goto error;
+	}
+
+	offset = (MBR_SECTOR_NR+LOADER_SECTOR_NR+START_SECTOR_NR)*512;
 	cnt = fread( fptr+offset, 1, KERNEL_SECTOR_NR*512, fp );
 	if ( cnt < 0 ){
 		perror("fread");
 		goto error;
 	}
 	fclose( fp );
-	printf("read %s %d byte(s)\n", argv[4], cnt);
+	printf("read %s %d byte(s)\n", argv[5], cnt);
 	printf("write offset at %08x\n",offset);
 
 
-	// 读取sh.bin，     写入扇区: 0x00022a00, 扇区数: SHELL_SECTOR_NR 
-	fp = fopen( argv[5], "rb");
+	// 读取sh.bin，     写入扇区: 0x00026a00, 扇区数: SHELL_SECTOR_NR 
+	fp = fopen( argv[6], "rb");
 	if ( !fp ){
 		perror("fopen");
 		goto error;
 	}
-	offset = (MBR_SECTOR_NR+LOADER_SECTOR_NR+KERNEL_SECTOR_NR)*512;
+	offset = (MBR_SECTOR_NR+LOADER_SECTOR_NR+START_SECTOR_NR+KERNEL_SECTOR_NR)*512;
     cnt = fread( fptr+offset, 1, SHELL_SECTOR_NR*512, fp );
     if ( cnt <= 0 ){
 		perror("fread");
 		goto error;
 	}
 	fclose( fp );
-	printf("read %s %d byte(s)\n", argv[5], cnt);	
+	printf("read %s %d byte(s)\n", argv[6], cnt);	
 	printf("write offset at %08x\n",offset);
 
 
-	// 读取logo.bin，     写入扇区: 0x00014200, 扇区数: LOGOL_SECTOR_NR 
+	// 读取logo.bin，     写入扇区: 0x00016200, 扇区数: LOGOL_SECTOR_NR 
 
-	fp = fopen( argv[6], "rb");
+	fp = fopen( argv[7], "rb");
 	if ( !fp ){
 		perror("fopen");
 		goto error;
 	}
-	offset = (MBR_SECTOR_NR+LOADER_SECTOR_NR+KERNEL_SECTOR_NR+SHELL_SECTOR_NR)*512;
+	offset = (MBR_SECTOR_NR+LOADER_SECTOR_NR+START_SECTOR_NR+KERNEL_SECTOR_NR+SHELL_SECTOR_NR)*512;
     cnt = fread( fptr+offset, 1, LOGO_SECTOR_NR*512, fp );
     if ( cnt <= 0 ){
 		perror("fread");
 		goto error;
 	}
 	fclose( fp );
-	printf("read %s %d byte(s)\n", argv[6], cnt);	
+	printf("read %s %d byte(s)\n", argv[7], cnt);	
 	printf("write offset at %08x\n",offset);	
 
 

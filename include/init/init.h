@@ -4,6 +4,7 @@
 
 #define KERNEL_PAGE_DIR_ADDR	0x0100000			// 内核页目录地址(1MB)
 #define VEDIO_VADDR             0x1000000			// 显存映射虚拟地址(16MB)
+#define RAM_DISK_PADDR			0x0700000			// RAM_DISK内存地址(7MB)
 
 struct kernel_param
 {

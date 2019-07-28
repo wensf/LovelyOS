@@ -13,7 +13,7 @@
 #define MEM_USED  1
 
 
-// #define PAGE_DEBUG_ENABLE					0
+#define PAGE_DEBUG_ENABLE					0
 
 extern void page_init(void);
 extern int page_map( uint32 pgd,uint32 pa, uint32 va, int size, int attr );
@@ -26,6 +26,7 @@ extern unsigned long get_free_pages( int page_nr );
 extern void free_page( unsigned long addr );
 
 #define MAP_NR(addr) (((addr)-low_memory_start)>>12)
+#define PA2VA(pa) ((pa)+0xC0000000)
 
 
 extern unsigned char mem_map[];

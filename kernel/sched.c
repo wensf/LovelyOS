@@ -92,8 +92,8 @@ void task_dump(struct task_struct *task)
 	printk("mm.stack_start=0x%08x\n",task->mm.stack_start);
 }
 
-#define TASK0_KERNEL_STACK(x) unsigned long __attribute__((aligned (PAGE_SIZE))) x[KERNEL_STACK_SIZE]
-#define TASK0_USER_STACK(x) unsigned long __attribute__((aligned (PAGE_SIZE))) x[USER_STACK_SIZE]
+#define TASK0_KERNEL_STACK(x) unsigned char __attribute__((aligned (PAGE_SIZE))) x[KERNEL_STACK_SIZE]
+#define TASK0_USER_STACK(x) unsigned char __attribute__((aligned (PAGE_SIZE))) x[USER_STACK_SIZE]
 
 TASK0_KERNEL_STACK(task_idle);
 TASK0_USER_STACK(task_idle_user_stk);
@@ -108,19 +108,8 @@ void sched_init(void)
 	printk("struct_tcb[%d]=0x%08x\n", 0, struct_tcb);
 	
 	memset( task, 0, sizeof(task));
-
-	/**
-	 * Link the task
-	 */
-	for ( int i = 0; i < SIZEOF_NR(task)-1; i++ )
-	{
-		task[i]->next = task[i+1];
-	}
-	task[SIZEOF_NR(task)-1]->next = task[0];
-	
-	
+		
 	task[0] = (struct task_struct *)struct_tcb;
-
 	current = task[0];
 
 	task[0]->pid      = 0x0;

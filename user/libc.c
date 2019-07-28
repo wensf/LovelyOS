@@ -406,7 +406,6 @@ int vsnprintf(char *buf, int buf_len, const char *fmt, va_list ap)
 	char *str,/**end,*/c;
 	int  i,flags,field_width,count;
 
-	str = tmp;
 	//end = buf + buf_len - 1;
 
 	for(; *fmt != '\0'; fmt++){
@@ -444,6 +443,8 @@ int vsnprintf(char *buf, int buf_len, const char *fmt, va_list ap)
 		if(is_digit(*fmt)){
 			field_width = skip_atoi(&fmt);
 		}
+
+		str = tmp;		
 
 		/* get a specific varible from fmt. */
 		switch(*fmt){
