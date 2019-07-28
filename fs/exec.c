@@ -8,7 +8,6 @@
 #include <sched.h>
 #include <printk.h>
 #include <libc.h>
-#include <memory.h>
 #include <page.h>
 
 extern void kernel_stack_dump(struct regs *reg);
@@ -71,14 +70,11 @@ int syscall_execve( uint32 *esp, uint32 *eip,const uint8 *file_name)
 	// 通知指针eip可以直接修改内核栈上对应EIP位置上的值.
 	// 我们正是通过修改内核栈保存的EIP值达到切换系统调用返回后，直接执行新进程指令的目的.
 	// 使用新程序的入口entry填入eip
-
-	uint32 offset;
-
+	
 	// 从RAM_DISK内存段中载入新进程的代码.先这样做吧，后续实现文件系统以后，改为从文件系统中读取可执行文件.
 	// 此处新进程由loader加载在主内存临时区8M附近.
 
 	// 改为COW 2019.07.11
- 	offset = 0x800000; // 程序入口在RAM_DISK偏移0处
 
 	// printk("execve(): file_name=%s, ",file_name);
 	// printk("EntryPoint = %08x [Instruction=%08x], SP=%08x\n", 0x2000000, *((uint32*)offset), 0x4000000);

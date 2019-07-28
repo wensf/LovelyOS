@@ -73,7 +73,7 @@ install:
 	sudo dd if=arch/c.img of=/dev/sdb bs=512 count=512 conv=notrunc
 clean:
 	cd arch/; make cleanDebug
-	rm init/*.o kernel/*.o lib/*.o mm/*.o *.bin *.elf *.dis
+	rm init/*.o kernel/*.o lib/*.o mm/*.o fs/*.o driver/*.o kernel/*.bin kernel/*.elf kernel/*.dis *.bin *.elf *.dis
 	rm Debug/ -rf
 	cd arch/loader/; make cleanDebug;
 	cd user/; make clean;

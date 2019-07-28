@@ -5,6 +5,11 @@
 #include <slab.h>
 
 
+/**
+ * int sleep_on( struct wait_queue *queue );
+ * make current to sleep on the queue.
+ */
+
 int sleep_on( struct wait_queue *queue )
 {
 	struct wait_queue_node *node;
@@ -23,6 +28,11 @@ int sleep_on( struct wait_queue *queue )
 
 	return (0);
 }
+
+/**
+ * int wake_up (struct wait_queue *queue);
+ * wake up the task on the head of queue.
+ */
 
 int wake_up (struct wait_queue *queue)
 {

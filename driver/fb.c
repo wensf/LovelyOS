@@ -56,7 +56,7 @@ unsigned char *fb_mmap(struct file *filp, int size, int flags)
 	printk("we map the video addr pa %08x to %08x\n", vaddr, p);
 
 	for ( int i = 0; i < 0x800000/PAGE_SIZE; i++ ){
-		page_map(current->pgd, vaddr+i*PAGE_SIZE, p+i*PAGE_SIZE,PAGE_SIZE, P_P|P_US|P_RW);
+		page_map(current->pg_dir, vaddr+i*PAGE_SIZE, p+i*PAGE_SIZE,PAGE_SIZE, P_P|P_US|P_RW);
 	}
 	
 	return (unsigned char *)(p);
