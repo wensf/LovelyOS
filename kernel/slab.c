@@ -2,6 +2,7 @@
 #include <types.h>
 #include <slab.h>
 #include <sched.h>
+#include <printk.h>
 
 struct slab_struct
 {
@@ -37,7 +38,7 @@ int slab_init(void)
 	slab->size = PAGE_SIZE;
 	slab->granularity = 128;
 	slab->bitmap = 0;
-	i = PAGE_SIZE / sizeof(*slab); // used by slab
+	i = (PAGE_SIZE / slab->granularity) - 1; // used by slab
 	slab->bitmap = 1<<i;
 
 	m_slab.slab = slab;
@@ -51,14 +52,14 @@ uint8 *slab_alloc( int size )
 	uint32 gran;
 
 	slab = m_slab.slab;
-	
+
 	if ( size > slab->granularity ){
 		return (0);
 	}
 	gran = slab->granularity;
 
 	for ( int i = 0; i < slab->size/gran; i++ ){
-		if ( !(slab->bitmap & (1<<0)) ){
+		if ( !(slab->bitmap & (1<<i)) ){
 			slab->bitmap |= 0x1<<i;
 			return (uint8*)(slab->addr + (i*gran));
 		}
@@ -73,10 +74,10 @@ int slab_free(uint32 addr)
 	int idx;
 	
 	slab = m_slab.slab;
+	idx = (addr-slab->addr)/slab->granularity;
 
 	if ((addr>= slab->addr) && (addr < (slab->addr+PAGE_SIZE)))
 	{
-		idx = addr/slab->granularity;
 		slab->bitmap &= ~(1<<idx);
 	}else{
 		return (-1);

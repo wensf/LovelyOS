@@ -128,9 +128,7 @@ int main(void)
 		printf(fd,"Hello Loverly OS stack at %08x,i=%08d\n",(unsigned int)&i, i);
 		i++;
 
-		if ( !(i % 3) ){
-			sleep(1000);
-		}
+		sleep(10000);
 
 		draw_line(x,y,100,4,color);
 
@@ -141,21 +139,24 @@ int main(void)
 		if ( i > 30 ){
 			exit(0);
 		}
-#if 0
-		read(fd_keyboard,(char*)&key,1);
-		printf(fd,"key=%d", key);
-		switch ( key )
+#if 1
+		while(1)
 		{
-		case 'J':
-			break;
-		case 'L':
-			break;
-		case 'I':
-			break;
-		case 'K':
-			break;
-		default:
-			break;
+			read(fd_keyboard,(char*)&key,1);
+			printf(fd,"%c", key);
+			switch ( key )
+			{
+			case 'J':
+				break;
+			case 'L':
+				break;
+			case 'I':
+				break;
+			case 'K':
+				break;
+			default:
+				break;
+			}
 		}
 #endif
 	}

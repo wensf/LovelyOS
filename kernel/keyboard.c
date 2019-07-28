@@ -2,6 +2,10 @@
 #include <types.h>
 #include <keyboard.h>
 #include <system.h>
+#include <slab.h>
+#include <traps.h>
+#include <sched.h>
+#include <wait_queue.h>
 #include <printk.h>
 
 extern void _keyboard_irq( int cpl, unsigned int esp );
@@ -265,6 +269,7 @@ struct key_queue
 };
 struct key_queue k_queue;
 
+static struct wait_queue keyboard_queue_queue;
 
 void key_queue_put(uint8 scan_code )
 {
@@ -293,6 +298,7 @@ uint8 key_queue_get(void)
 
 int32 key_read(void);
 
+
 void keyboard_irq( int cpl, unsigned int esp )
 {
 	uint8 scan_code = inb(0x60);
@@ -300,7 +306,8 @@ void keyboard_irq( int cpl, unsigned int esp )
 	key_queue_put(scan_code);
 
 	// 暂时在这里解析按键
-	
+
+	#if 0
 	int key = key_read();
 
 	#if 1
@@ -309,6 +316,10 @@ void keyboard_irq( int cpl, unsigned int esp )
 		printk("%c",key);
 	}
 	#endif
+	#endif
+
+	wake_up(&keyboard_queue_queue);
+	
 }
 
 int32 key_read(void)
@@ -378,7 +389,7 @@ int32 key_read(void)
 }
 
 
-
+#include <sched.h>
 #include <libc.h>
 #include <chrdev.h>
 #include <vfs.h>
@@ -392,9 +403,19 @@ int keyboard_open( struct file *filp )
 
 int keyboard_read( struct file *filp, char *__buf, int len )
 {
-	printk("keyboard_read()\n");
+	int key;
+	
+	// printk("keyboard_read()\n");
 
-	return (0);
+	while ( !(key=key_read()) )
+	{
+		sleep_on(&keyboard_queue_queue);
+	}
+	((int*)__buf)[0] = key;
+
+	// printk("end keyboard_read() key=%d\n", key);
+	
+	return 1;
 }
 
 int keyboard_lseek( struct file *filp, int offset, int whence )
@@ -451,12 +472,22 @@ struct file_operations keyboard_file_operation =
 
 void keyboard_init(void)
 {
+	struct wait_queue_node *node;
+
 	m_shift_l = 0;
 	m_shift_r = 0;
 	m_leading_e0 = 0;
 	k_queue.h = 0;
 	k_queue.t = 0;
 
+	node = (struct wait_queue_node *)slab_alloc(sizeof(struct wait_queue_node));
+	if ( !node ){
+		kernel_die("keyboard_init oom!!!\n");
+	}
+	node->next = 0;
+	node->task = 0;
+	keyboard_queue_queue.head = node;
+	keyboard_queue_queue.tail = keyboard_queue_queue.head;
 
 	strcpy ( keyboard_driver.driver_name, "keyboard" );
 	strcpy ( keyboard_device.dev_name, "keyboard" );

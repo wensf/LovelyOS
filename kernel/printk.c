@@ -64,7 +64,7 @@ int printk(const char *fmt,...)
 	{
 		if ( buf[i] == '\n'){
 		    y += 16; x = ox;
-			if ( y >= (kparam->yres-8) )
+			if ( y >= (kparam->yres-64) )
 			{ 
 				x += kparam->xres/3; 
 				if ( x >= kparam->xres )
@@ -87,7 +87,7 @@ int printk(const char *fmt,...)
 			{
 				x = 0; 
 				y += 16;
-				if ( y >= (kparam->yres-8) )
+				if ( y >= (kparam->yres-64) )
 				{
 					x += kparam->xres/3; 
 					if ( x >= kparam->xres ){
@@ -96,7 +96,7 @@ int printk(const char *fmt,...)
 				}
 			}
 
-			y %= (kparam->yres-8);
+			y %= (kparam->yres-64);
 		}
 		i++;
 	}

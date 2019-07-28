@@ -340,6 +340,8 @@ static int skip_atoi(const char **s)
 	return i;
 }
 
+
+
 /**
  * modify field_width,default left aligned.
  * str: two level pointer point to a pointer that point to a buffer.
@@ -394,6 +396,16 @@ int padden(char **str,int count,int field_width,int flags)
 }
 
 /**
+ * PureRTOS/lib/libc.c
+ * some functions to deal with strings.
+ * created : 2014.12.20
+ * last modified : 2015.9.15
+ */
+#include <stdarg.h>
+#include <libc.h>
+
+
+/**
  * To format a string.
  * buf : buffer to store the result.
  * buf_len : fmt length.
@@ -401,13 +413,12 @@ int padden(char **str,int count,int field_width,int flags)
  * ap : variable string.
  */
 
-char tmp[MAX_BUF_LEN]; 
-
 int vsnprintf(char *buf, int buf_len, const char *fmt, va_list ap)
 {
 	char *str;
 	char c;
 	int  i,flags,field_width,count;
+	char tmp[MAX_BUF_LEN]; 
 
 	for ( ; *fmt != '\0'; fmt++ )
 	{
