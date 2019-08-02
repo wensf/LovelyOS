@@ -37,7 +37,7 @@ int tty_write( struct file *filp, const char *__buf, int len )
 	int x, y;
 
 	x = filp->w_o % kparam->xres;
-	y = filp->w_o / kparam->yres;
+	y = filp->w_o / kparam->xres;
 
 
 	// printk("task[%d] tty_write len=%d, x=%d,y=%d\n", current->pid, len, x, y);	
@@ -45,20 +45,25 @@ int tty_write( struct file *filp, const char *__buf, int len )
     while( __buf[i] != '\0' )
 	{
 		if ( __buf[i] == '\n'){
-			filp->w_o += ((kparam->xres-x)+kparam->xres-x/2);
-		    y += 16; x = kparam->xres-x/2;
+		    y += 16; x = 0;
 		}else{
 	    	putchar(x, y, __buf[i], 0xFFFFFF, 0x101010);
 			x += 8;
-			filp->w_o += 8;
+			if ( x > (kparam->xres-1) ){
+				y += 16;
+			}
 		}
 		i++;
 	}
-	 
-	if ( filp->w_o > kparam->xres * ((kparam->yres/3)*2) )
+
+	filp->w_o = y*kparam->xres + x; 
+	
+	if ( filp->w_o > (kparam->xres*kparam->yres-1) )
 	{
-		filp->w_o = kparam->xres * (kparam->yres/3);
+		filp->w_o = 0;
 	}
+
+	// printk("task[%d] tty_write len=%d, x=%d,y=%d\n", current->pid, len, x, y);
 	
 	return (i);
 }
@@ -74,7 +79,7 @@ int tty_lseek( struct file *filp, int offset, int whence )
 	switch ( whence )
 	{
 	case SEEK_SET:
-		filp->w_o = kparam->xres * (kparam->yres/3) + offset;
+		filp->w_o = offset;
 		break;
 	case SEEK_CUR:
 		filp->w_o += offset;

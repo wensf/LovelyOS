@@ -10,6 +10,22 @@
 #define cli() __asm__ ("cli"::)
 #define nop() __asm__ ("nop"::)
 
+#define _local_irq_save(x) 	\
+__asm__ ("pushfl \n\t" 		\
+	"popl %0 \n\t" 			\
+	"cli" 					\
+	:"=g" (x) 				\
+	:						\
+	:"memory")
+
+#define _local_irq_restore(x)  	\
+__asm__ ("pushl %0 \n\t" 		\
+	"popfl" 					\
+	:							\
+	:"g" (x) 					\
+	:"memory")
+
+
 struct tss_desc
 {
 	unsigned short limit0;

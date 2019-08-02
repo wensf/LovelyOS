@@ -188,6 +188,8 @@ int ramfs_read( int fd, char *__buf, int len )
 	{
 		i = filp->f_ops->f_read(filp,__buf, len);
 	}
+
+	printk("ramfs_read %02x\n",__buf[0]);
 	
 	return (i);
 }

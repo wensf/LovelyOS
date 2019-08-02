@@ -104,7 +104,7 @@ void generic_protected_fault( int cpl, unsigned long esp )
 void parallel_interrupt(int cpl, unsigned long esp)
 {
 	printk("parallel_interrupt\n");
-	kernel_panic(cpl, esp);
+	// kernel_panic(cpl, esp);
 }
 
 void trap_init( void )

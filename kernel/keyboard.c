@@ -259,7 +259,7 @@ int m_shift_l = 0;
 int m_shift_r = 0;
 int m_leading_e0 = 0;
 
-#define KEY_QUEUE_SIZE 16
+#define KEY_QUEUE_SIZE 8
 
 struct key_queue
 {
@@ -298,48 +298,43 @@ uint8 key_queue_get(void)
 
 int32 key_read(void);
 
-
 void keyboard_irq( int cpl, unsigned int esp )
 {
 	uint8 scan_code = inb(0x60);
 
+	// printk("\n\nkey_irq %02x\n", scan_code);
+
+	if (scan_code & 0x80){
+		return;
+	}
+
 	key_queue_put(scan_code);
 
-	// 暂时在这里解析按键
-
-	#if 0
-	int key = key_read();
-
-	#if 1
-	if ( key != 0 )
-	{
-		printk("%c",key);
-	}
-	#endif
-	#endif
-
 	wake_up(&keyboard_queue_queue);
-	
 }
 
 int32 key_read(void)
 {
     uint8 scan_code = 0, shift = 0;
     uint32 col = 0, key = 0;
+	uint32 _eflags;
+
+	_local_irq_save(_eflags);
 
     if ( k_queue.t != k_queue.h )
     {
         scan_code = key_queue_get();
+		_local_irq_restore(_eflags);
 
         /* set m_leading_e0 */
-        if (scan_code == 0xe0)
+        if ( scan_code == 0xe0 )
         {
             m_leading_e0 = 1;
             return 0;
         }
 
         /* key up */
-        if (scan_code & 0x80)
+        if ( scan_code & 0x80 )
         {
             key = keymap[scan_code & 0x7f][col];
             if (key == K_SHIFT_L) {
@@ -379,11 +374,13 @@ int32 key_read(void)
         else if (key == K_BACKSPACE) {
             key = '\b';
         }
-        else if (KEY_TYPE(key) != KT_ASCII) {
+        else if (KEY_TYPE(key) != KT_ASCII) {	
             return 0;
         }
         return key;
     }
+	
+	_local_irq_restore(_eflags);
 
     return 0;
 }
@@ -411,9 +408,10 @@ int keyboard_read( struct file *filp, char *__buf, int len )
 	{
 		sleep_on(&keyboard_queue_queue);
 	}
-	((int*)__buf)[0] = key;
 
-	// printk("end keyboard_read() key=%d\n", key);
+	__buf[0] = key & 0xFF;
+
+	// printk("end keyboard_read() key=%02x\n", key);
 	
 	return 1;
 }

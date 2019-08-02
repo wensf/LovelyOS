@@ -395,15 +395,6 @@ int padden(char **str,int count,int field_width,int flags)
 	return 0;
 }
 
-/**
- * PureRTOS/lib/libc.c
- * some functions to deal with strings.
- * created : 2014.12.20
- * last modified : 2015.9.15
- */
-#include <stdarg.h>
-#include <libc.h>
-
 
 /**
  * To format a string.

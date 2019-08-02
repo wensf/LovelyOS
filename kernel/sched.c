@@ -8,20 +8,6 @@
 #include <slab.h>
 #include <printk.h>
 
-#define _local_irq_save(x) 	\
-__asm__ ("pushfl \n\t" 		\
-	"popl %0 \n\t" 			\
-	"cli" 					\
-	:"=g" (x) 				\
-	:						\
-	:"memory")
-
-#define _local_irq_restore(x)  	\
-__asm__ ("pushl %0 \n\t" 		\
-	"popfl" 					\
-	:							\
-	:"g" (x) 					\
-	:"memory")
 
 struct task_struct *task[TASK_NR];
 static struct tss_struct tss;

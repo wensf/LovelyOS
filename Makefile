@@ -7,8 +7,8 @@ CC 				= gcc
 LD 				= ld
 OBJCOPY 		= objcopy
 OBJDUMP			= objdump
-CFLAGS 			= -Wall -g -O1 -Iinclude -I include/lib -I include/kernel -I include/mm -I include/init -I include/fs -I include/driver -fno-stack-protector -fno-builtin -nostdinc
-LDFLAGS 		= -T.lds
+CFLAGS 			= -Wall -g -O2 -Iinclude -I include/lib -I include/kernel -I include/mm -I include/init -I include/fs -I include/driver -fno-stack-protector -fno-builtin -nostdinc
+LDFLAGS 		= -Tos.ld
 BOOT_BIN        = boot.bin
 LOADER_BIN      = loader.bin
 START_BIN		= kernel/start.bin
@@ -38,7 +38,7 @@ Debug : $(BOOT_BIN) $(LOADER_BIN) $(START_BIN) $(OBJS_KERNEL) $(OBJC_KERNEL) $(O
 	$(LD) $(LDFLAGS) --oformat elf32-i386 -o kernel.elf $(OBJS_KERNEL) $(OBJC_KERNEL) $(OBJS_LIB) $(OBJC_LIB)  $(OBJC_MM) $(OBJC_INIT) $(OBJC_FS) $(OBJC_DRIVER)
 	$(OBJCOPY) -S -O binary kernel.elf $(KERNEL_BIN)
 	$(OBJDUMP) -D kernel.elf > kernel.dis
-	make shell
+	make app
 	make image
 
 $(BOOT_BIN):
@@ -60,13 +60,14 @@ run:
 dump:
 	objdump -D -mi386 kernel.elf
 image:
-	tools/build arch/b.img arch/boot.bin arch/loader/loader.bin kernel/start.bin kernel.bin user/sh.bin tools/logo.bin
+	tools/build arch/b.img arch/boot.bin arch/loader/loader.bin kernel/start.bin kernel.bin user/sh/sh.bin tools/logo.bin
 	dd if=arch/b.img of=arch/c.img bs=512 count=512 conv=notrunc
 tool:
 	gcc -o tools/build tools/build.c
 	
-shell:
-	cd user; make
+app:
+	cd user/sh;make
+	cd user/ls;make
 untool:
 	rm tools/*.o tools/build
 install:
@@ -76,7 +77,8 @@ clean:
 	rm init/*.o kernel/*.o lib/*.o mm/*.o fs/*.o driver/*.o kernel/*.bin kernel/*.elf kernel/*.dis *.bin *.elf *.dis
 	rm Debug/ -rf
 	cd arch/loader/; make cleanDebug;
-	cd user/; make clean;
+	cd user/sh; make clean;
+	cd user/ls; make clean;
 #---------------------------------------------------------------------------------
 
 

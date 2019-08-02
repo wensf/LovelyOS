@@ -43,6 +43,7 @@ type name(atype a)\
 	__asm__ __volatile__("int $0x80"\
 			:"=a"(_res)\
 			:"a"(_SYSCALL_##name),"b"((long)(a))\
+			:"memory"\
 	);\
 	if(_res >= 0)\
 		return (type)(_res);\
@@ -59,6 +60,7 @@ type name(atype a, btype b)\
 			:"=a"(_res)\
 			:"a"(_SYSCALL_##name),"b"((long)(a)),\
 			 "b"((long)(b))\
+			:"memory"\
 	);\
 	if(_res >= 0)\
 		return (type)(_res);\
@@ -75,6 +77,7 @@ type name(atype a, btype b, ctype c)\
 			:"=a"(_res)\
 			:"a"(_SYSCALL_##name),"b"((long)(a)),\
 			 "c"((long)(b)), "d"((long)(c))\
+			:"memory"\
 	);\
 	if(_res >= 0)\
 		return (type)(_res);\
@@ -82,6 +85,7 @@ type name(atype a, btype b, ctype c)\
 		return (type)(-1);\
 	}\
 }
+
 
 
 #endif
